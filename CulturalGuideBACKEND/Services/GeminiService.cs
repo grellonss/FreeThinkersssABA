@@ -156,10 +156,20 @@ namespace CulturalGuideBACKEND.Services
                 relevantPois = poiMatches.Take(3).ToList();
             }
 
+            bool isItalian = (municipality?.Contains("(MC)") ?? false) ||
+                             (municipality?.Contains("(AP)") ?? false) ||
+                             (municipality?.Contains("(AN)") ?? false) ||
+                             (municipality?.Contains("(PU)") ?? false) ||
+                             (municipality?.Contains("(FM)") ?? false) ||
+                             (context?.Contains("Italia") ?? false) ||
+                             (context?.Contains("Camerino") ?? false);
+
             var sb = new StringBuilder();
             if (isDe)
             {
-                sb.AppendLine($"🇨🇭 Schweizer Kulturführer – Empfehlungen für {municipality}:");
+                sb.AppendLine(isItalian 
+                    ? $"🇮🇹 Kulturführer Italien & Marken – Empfehlungen für {municipality}:" 
+                    : $"🇨🇭 Schweizer Kulturführer – Empfehlungen für {municipality}:");
                 sb.AppendLine();
                 if (relevantPois.Any())
                 {
@@ -173,12 +183,16 @@ namespace CulturalGuideBACKEND.Services
                 }
                 else
                 {
-                    sb.AppendLine($"In {municipality} können Sie wunderschöne historische Orte, erstklassige Museen und malerische Schweizer Landschaften entdecken.");
+                    sb.AppendLine(isItalian
+                        ? $"In {municipality} können Sie wunderschöne historische Orte, die Marken und die Aktivitäten von ESN Camerino entdecken."
+                        : $"In {municipality} können Sie wunderschöne historische Orte, erstklassige Museen und malerische Schweizer Landschaften entdecken.");
                 }
             }
             else if (isEn)
             {
-                sb.AppendLine($"🇨🇭 Swiss Cultural Guide – Recommendations for {municipality}:");
+                sb.AppendLine(isItalian
+                    ? $"🇮🇹 Cultural Guide Italy & Marche – Recommendations for {municipality}:"
+                    : $"🇨🇭 Swiss Cultural Guide – Recommendations for {municipality}:");
                 sb.AppendLine();
                 if (relevantPois.Any())
                 {
@@ -192,12 +206,16 @@ namespace CulturalGuideBACKEND.Services
                 }
                 else
                 {
-                    sb.AppendLine($"In {municipality}, you can explore historic landmarks, Swiss cultural heritage, and scenic alpine panoramas.");
+                    sb.AppendLine(isItalian
+                        ? $"In {municipality}, you can explore historic Italian landmarks, universities, and student life with ESN Camerino."
+                        : $"In {municipality}, you can explore historic landmarks, Swiss cultural heritage, and scenic alpine panoramas with ESN Olten.");
                 }
             }
             else
             {
-                sb.AppendLine($"🇨🇭 Guida Culturale Svizzera – Suggerimenti per {municipality}:");
+                sb.AppendLine(isItalian
+                    ? $"🇮🇹 Guida Culturale Italia & Marche – Suggerimenti per {municipality}:"
+                    : $"🇨🇭 Guida Culturale Svizzera – Suggerimenti per {municipality}:");
                 sb.AppendLine();
                 if (relevantPois.Any())
                 {
@@ -211,7 +229,9 @@ namespace CulturalGuideBACKEND.Services
                 }
                 else
                 {
-                    sb.AppendLine($"A {municipality} puoi scoprire splendidi beni storici, musei dell'inventario culturale svizzero e suggestive passeggiate panoramiche.");
+                    sb.AppendLine(isItalian
+                        ? $"A {municipality} puoi scoprire splendidi beni storici, borghi marchigiani, tesori d'arte e la comunità universitaria di ESN Camerino."
+                        : $"A {municipality} puoi scoprire splendidi beni storici, musei dell'inventario culturale svizzero e suggestive passeggiate panoramiche.");
                 }
             }
 

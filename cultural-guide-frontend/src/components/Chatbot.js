@@ -1,21 +1,33 @@
-import React, {useState, useRef, useEffect} from 'react';
-import {Send, ArrowLeft, MapPin, User as UserIcon} from 'lucide-react';
-import {toast} from 'sonner';
-import {useTranslation} from "react-i18next";
-import {formatDate} from "../utils/formatDate";
-import {LoadingSpinner} from "./ui_components/Loading";
+import React, { useState, useRef, useEffect } from 'react';
+import { Send, ArrowLeft, MapPin, User as UserIcon, Bot, Sparkles } from 'lucide-react';
+import { toast } from 'sonner';
+import { useTranslation } from "react-i18next";
 
+export function Chatbot({ user, onBack }) {
+    const { t, i18n } = useTranslation();
+    const storedCountry = localStorage.getItem("cultural_guide_country") || "CH";
+    const storedCity = localStorage.getItem("cultural_guide_city") || (storedCountry === "IT" ? "Camerino" : "Olten");
 
-export function Chatbot({user, onBack}) {
-    const {t, i18n} = useTranslation();
+    const [selectedCity, setSelectedCity] = useState(storedCity);
+    const [activeCountry, setActiveCountry] = useState(storedCountry);
+    const isIt = activeCountry === "IT";
+
+    // Country Theme styles: Bordeaux Red for CH vs Emerald Green for IT
+    const themeBgBtn = isIt ? "bg-emerald-700 hover:bg-emerald-800 text-white" : "bg-red-800 hover:bg-red-900 text-white";
+    const themeText = isIt ? "text-emerald-700 hover:text-emerald-800" : "text-red-800 hover:text-red-900";
+    const themeHighlight = isIt ? "text-emerald-700" : "text-red-800";
+    const themeBadgeClass = isIt ? "bg-emerald-50 text-emerald-900 border-emerald-200" : "bg-red-50 text-red-900 border-red-200";
+    const themeFocusBorder = isIt ? "focus:border-emerald-600" : "focus:border-red-800";
+    const themeUserBubble = isIt ? "bg-emerald-700 text-white" : "bg-red-800 text-white";
+
     const [messages, setMessages] = useState([
         {
             id: '1',
             text: i18n.language === 'de'
-                ? `Hallo ${user.name}! Ich bin Ihr Schweizer Kulturführer. Wie kann ich Ihnen bei Ihrer Reise in die Schweiz helfen?`
+                ? `Hallo ${user?.name || ''}! Ich bin Ihr persönlicher Kulturführer für ${isIt ? 'Italien & ESN Camerino' : 'die Schweiz & ESN Olten'}. Wie kann ich Ihnen bei Ihrem Aufenthalt in ${storedCity} behilflich sein?`
                 : i18n.language === 'en'
-                    ? `Hello ${user.name}! I am your Swiss Cultural Guide. How can I assist you with your travels in Switzerland today?`
-                    : `Ciao ${user.name}! Sono il tuo assistente per la Guida Culturale Svizzera. Come posso aiutarti oggi per il tuo viaggio in Svizzera?`,
+                    ? `Hello ${user?.name || ''}! I am your Cultural Guide assistant for ${isIt ? 'Italy & ESN Camerino' : 'Switzerland & ESN Olten'}. How can I help you explore ${storedCity} today?`
+                    : `Ciao ${user?.name || ''}! Sono il tuo assistente per la Cultural Guide (${isIt ? 'ESN Camerino 🇮🇹' : 'ESN Olten 🇨🇭'}). Come posso aiutarti a scoprire ${storedCity} oggi? Chiedimi cosa visitare, dove mangiare o consigli per studenti!`,
             sender: 'bot',
             timestamp: new Date(),
         },
@@ -26,42 +38,28 @@ export function Chatbot({user, onBack}) {
     const inputRef = useRef(null);
     const [loading, setLoading] = useState(false);
 
-    // City selection state
-    const [selectedCity, setSelectedCity] = useState("Lugano");
-
-    // Time availability state
-    const [startSelection, setStartSelection] = useState({date: null, hour: null});
-    const [endSelection, setEndSelection] = useState({date: null, hour: null});
-
-    // Preference state
+    const [startSelection, setStartSelection] = useState({ date: null, hour: null });
+    const [endSelection, setEndSelection] = useState({ date: null, hour: null });
     const [profileVector, setProfileVector] = useState(null);
 
-
-    // Auto-scroll to bottom when new messages arrive
+    // Auto-scroll to bottom
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({behavior: 'smooth'});
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, isTyping]);
 
-    // -----------------------------
-    // Check if user has preferences (profile vector) stored
-    // -----------------------------
+    // Check preferences
     useEffect(() => {
-        if (!user) {
-            return;
-        }
+        if (!user) return;
 
         const checkUserProfileVector = async () => {
             setLoading(true);
-
-
             try {
                 const userId = user.id || user.email;
-
                 const response = await fetch(
                     `http://localhost:5203/api/eppoiapi/profile-vector/${encodeURIComponent(userId)}`,
                     {
                         method: "GET",
-                        headers: {"Content-Type": "application/json"},
+                        headers: { "Content-Type": "application/json" },
                         credentials: "include",
                     }
                 );
@@ -69,35 +67,30 @@ export function Chatbot({user, onBack}) {
                 if (response.ok) {
                     const vector = await response.json();
                     setProfileVector(vector);
-                    if (vector.municipality) {
-                        setSelectedCity(vector.municipality);
+                    if (vector.municipality) setSelectedCity(vector.municipality);
+                    if (vector.country) setActiveCountry(vector.country);
+                } else {
+                    const local = localStorage.getItem("cultural_guide_preferences");
+                    if (local) {
+                        const parsed = JSON.parse(local);
+                        setProfileVector(parsed);
+                        if (parsed.municipality) setSelectedCity(parsed.municipality);
+                        if (parsed.country) setActiveCountry(parsed.country);
                     }
                 }
             } catch (err) {
-                console.warn("User preferences not found or error:", err);
+                console.warn("User preferences sync note:", err);
             } finally {
                 setLoading(false);
             }
-
         };
 
         checkUserProfileVector();
     }, [user]);
 
-    // -----------------
-    // Extract city and time availability from profile vector
-    // -----------------
+    // Time availability
     useEffect(() => {
-        if (!profileVector) {
-            return;
-        }
-
-        // City
-        if (profileVector.municipality) {
-            setSelectedCity(profileVector.municipality);
-        }
-
-        // Time Availability - Parse ISO strings to { date, hour } format
+        if (!profileVector) return;
         if (profileVector.startTime) {
             const startDate = new Date(profileVector.startTime);
             setStartSelection({
@@ -105,7 +98,6 @@ export function Chatbot({user, onBack}) {
                 hour: startDate.getHours()
             });
         }
-
         if (profileVector.endTime) {
             const endDate = new Date(profileVector.endTime);
             setEndSelection({
@@ -113,86 +105,70 @@ export function Chatbot({user, onBack}) {
                 hour: endDate.getHours()
             });
         }
+    }, [profileVector]);
 
-    }, [profileVector]); // Add profileVector as dependency
-
-    // -----------------------------
-    // wait for timeAvailability from ProfileVector Database fetch is ready
-    // -----------------------------
     const isTimeAvailabilityReady =
         startSelection?.date &&
         startSelection?.hour !== null &&
-        startSelection?.hour !== undefined &&
         endSelection?.date &&
-        endSelection?.hour !== null &&
-        endSelection?.hour !== undefined;
+        endSelection?.hour !== null;
 
     const sendMessage = async () => {
-        if (!inputText.trim()) {
-            toast.error(t('chatbot.errorEmpty'));
-            return;
-        }
+        if (!inputText.trim()) return;
 
         const userMessage = {
             id: Date.now().toString(),
-            text: inputText,
+            text: inputText.trim(),
             sender: 'user',
             timestamp: new Date(),
-            language: i18n.language,
         };
 
         setMessages((prev) => [...prev, userMessage]);
-        const messageToSend = inputText;
+        const messageToSend = inputText.trim();
         setInputText('');
         setIsTyping(true);
 
         try {
+            const userId = user.id || user.email || 'visitor';
+            const currentLang = i18n.language || 'it';
+
             const response = await fetch('http://localhost:5203/api/chatbot/chat', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                credentials: 'include',
                 body: JSON.stringify({
-                    // check in backend if user has valid token/session
-                    userId: user.id || user.email,
+                    userId: userId.toString(),
                     municipality: selectedCity,
+                    language: currentLang,
                     message: messageToSend,
-                    messageSentDate: new Date().toISOString(),
-                    language: i18n.language,
                 }),
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
 
             const data = await response.json();
 
-            if (data.success) {
-                const botMessage = {
-                    id: (Date.now() + 1).toString(),
-                    text: data.response || data.message,
-                    sender: 'bot',
-                    timestamp: new Date(),
-                };
+            const botResponse = {
+                id: (Date.now() + 1).toString(),
+                text: data.response || "Ecco i miei suggerimenti culturali per te.",
+                sender: 'bot',
+                timestamp: new Date(data.responseDate) || new Date(),
+            };
 
-                setMessages((prev) => [...prev, botMessage]);
-            } else {
-                throw new Error(data.error || 'Unknown error');
-            }
+            setMessages((prev) => [...prev, botResponse]);
         } catch (error) {
             console.error('Error sending message:', error);
-
             const errorMessage = {
                 id: (Date.now() + 1).toString(),
-                text: t('chatbot.errorResponse') || 'Sorry, I encountered an error. Please try again.',
+                text: t('chatbot.errorSending', 'Si è verificato un errore di connessione. Riprova tra poco.'),
                 sender: 'bot',
                 timestamp: new Date(),
             };
-
             setMessages((prev) => [...prev, errorMessage]);
-            toast.error(t('chatbot.errorSending'));
+            toast.error(t('chatbot.errorSending', 'Errore durante l\'invio del messaggio'));
         } finally {
             setIsTyping(false);
         }
@@ -208,87 +184,83 @@ export function Chatbot({user, onBack}) {
     return (
         <div className="min-h-5 p-4 md:p-8 flex items-center justify-center">
             <div className="w-full max-w-4xl h-[calc(100vh-8rem)] flex flex-col">
+
                 {/* Header */}
-                <div className="bg-white rounded-t-2xl shadow-xl p-6">
+                <div className="bg-white dark:bg-gray-900 rounded-t-3xl shadow-lg p-6 border-b border-gray-100 dark:border-gray-800">
                     <button
                         onClick={onBack}
-                        className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 transition-colors mb-4"
+                        className={`inline-flex items-center gap-2 font-bold text-xs transition-colors mb-4 ${themeText}`}
                     >
-                        <ArrowLeft className="w-5 h-5"/>
-                        <span>{t('chatbot.goBack')}</span>
+                        <ArrowLeft className="w-4 h-4" />
+                        <span>{t('carousel_back_dashboard', 'Torna alla Dashboard')}</span>
                     </button>
 
-                    <div className="flex items-center justify-between">
-                        {/* Loading State */}
-                        {loading && (
-                            <div className="flex justify-center py-20">
-                                <LoadingSpinner size="lg"/>
-                            </div>
-                        )}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div>
-                            <h1 className="text-gray-900 mb-2">{t('chatbot.title')}</h1>
-                            <p className="text-gray-600">{t('chatbot.subtitle')}</p>
+                            <div className="flex items-center gap-2 mb-1">
+                                <h1 className="text-2xl font-black text-gray-900 dark:text-white">{t('dashboard_card3_title', 'Assistente Chatbot')}</h1>
+                                <span className={`text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border shadow-2xs ${themeBadgeClass}`}>
+                                    {isIt ? "ESN Camerino 🇮🇹" : "ESN Olten 🇨🇭"}
+                                </span>
+                            </div>
+                            <p className="text-gray-500 dark:text-gray-400 text-xs">
+                                {t('chatbot.subtitle', 'Fammi domande su punti d\'interesse, eventi e consigli')} a {selectedCity}
+                            </p>
                         </div>
+
                         {!loading && (
-                            <div className="flex flex-col gap-2 items-end">
-                                <div className="flex items-center gap-2 px-4 py-2 bg-indigo-50 rounded-lg">
-                                    <MapPin className="w-4 h-4 text-indigo-600"/>
-                                    <span className="text-indigo-900 text-sm">{selectedCity}</span>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold ${themeBadgeClass}`}>
+                                    <MapPin className={`w-3.5 h-3.5 ${themeHighlight}`} />
+                                    <span>{selectedCity} ({isIt ? "IT" : "CH"})</span>
                                 </div>
-                                <br/>
-                                <div className="flex items-center gap-2 px-4 py-2 bg-indigo-50 rounded-lg">
-                                    {isTimeAvailabilityReady && t("interestSelection_timeAvailability", {
-                                        startDate: formatDate(startSelection.date, formatDate.locale),
-                                        startHour: `${startSelection.hour.toString().padStart(2, '0')}:00 → `,
-                                        endDate: formatDate(endSelection, formatDate.locale),
-                                        endHour: `${endSelection.hour.toString().padStart(2, '0')}:00`
-                                    })}
-                                </div>
+                                {isTimeAvailabilityReady && (
+                                    <div className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold ${themeBadgeClass}`}>
+                                        <Sparkles className={`w-3.5 h-3.5 ${themeHighlight}`} />
+                                        <span>Periodo Configurato</span>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
                 </div>
 
                 {/* Messages Container */}
-                <div className="flex-1 bg-gray-50 overflow-y-auto p-6 space-y-4">
+                <div className="flex-1 bg-gray-50/70 dark:bg-gray-950/70 overflow-y-auto p-6 space-y-4">
                     {messages.map((message) => (
                         <div
                             key={message.id}
                             className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                         >
-                            <div
-                                className={`flex gap-3 max-w-[80%] ${message.sender === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+                            <div className={`flex gap-3 max-w-[85%] ${message.sender === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
                                 {/* Avatar */}
                                 <div
-                                    className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                                    className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm ${
                                         message.sender === 'user'
-                                            ? 'bg-indigo-600 text-white'
-                                            : 'bg-gray-300 text-gray-700'
+                                            ? themeUserBubble
+                                            : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200'
                                     }`}
                                 >
                                     {message.sender === 'user' ? (
-                                        <UserIcon className="w-5 h-5"/>
+                                        <UserIcon className="w-4 h-4" />
                                     ) : (
-                                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                            <path
-                                                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
-                                        </svg>
+                                        <Bot className={`w-4 h-4 ${themeHighlight}`} />
                                     )}
                                 </div>
 
                                 {/* Message Bubble */}
                                 <div>
                                     <div
-                                        className={`rounded-2xl px-4 py-3 ${
+                                        className={`rounded-2xl px-5 py-3.5 text-sm leading-relaxed shadow-sm ${
                                             message.sender === 'user'
-                                                ? 'bg-indigo-600 text-white rounded-tr-none'
-                                                : 'bg-white text-gray-900 rounded-tl-none shadow-md'
+                                                ? `${themeUserBubble} rounded-tr-none font-medium`
+                                                : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-tl-none border border-gray-100 dark:border-gray-700/80 whitespace-pre-wrap'
                                         }`}
                                     >
-                                        <p className="break-words">{message.text}</p>
+                                        <p>{message.text}</p>
                                     </div>
-                                    <p className={`text-xs text-gray-500 mt-1 ${message.sender === 'user' ? 'text-right' : 'text-left'}`}>
-                                        {message.timestamp.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}
+                                    <p className={`text-[10px] text-gray-400 mt-1 ${message.sender === 'user' ? 'text-right' : 'text-left'}`}>
+                                        {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </p>
                                 </div>
                             </div>
@@ -298,36 +270,26 @@ export function Chatbot({user, onBack}) {
                     {/* Typing Indicator */}
                     {isTyping && (
                         <div className="flex justify-start">
-                            <div className="flex gap-3 max-w-[80%]">
-                                {/* Bot Avatar */}
-                                <div
-                                    className="w-10 h-10 rounded-full bg-gray-300 text-gray-700 flex items-center justify-center flex-shrink-0">
-                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                        <path
-                                            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
-                                    </svg>
+                            <div className="flex gap-3 max-w-[85%]">
+                                <div className="w-9 h-9 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 flex items-center justify-center flex-shrink-0 shadow-sm">
+                                    <Bot className={`w-4 h-4 ${themeHighlight}`} />
                                 </div>
-
-                                {/* Typing Bubble */}
-                                <div className="bg-white rounded-2xl rounded-tl-none shadow-md px-5 py-4">
-                                    <div className="flex gap-1.5">
-                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                                             style={{animationDelay: '0ms'}}></div>
-                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                                             style={{animationDelay: '150ms'}}></div>
-                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                                             style={{animationDelay: '300ms'}}></div>
+                                <div className="bg-white dark:bg-gray-800 rounded-2xl rounded-tl-none shadow-sm border border-gray-100 dark:border-gray-700 px-5 py-4">
+                                    <div className="flex gap-1.5 items-center">
+                                        <div className={`w-2 h-2 rounded-full animate-bounce ${isIt ? 'bg-emerald-600' : 'bg-red-700'}`} style={{ animationDelay: '0ms' }} />
+                                        <div className={`w-2 h-2 rounded-full animate-bounce ${isIt ? 'bg-emerald-600' : 'bg-red-700'}`} style={{ animationDelay: '150ms' }} />
+                                        <div className={`w-2 h-2 rounded-full animate-bounce ${isIt ? 'bg-emerald-600' : 'bg-red-700'}`} style={{ animationDelay: '300ms' }} />
                                     </div>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    <div ref={messagesEndRef}/>
+                    <div ref={messagesEndRef} />
                 </div>
 
                 {/* Input Container */}
-                <div className="bg-white rounded-b-2xl shadow-xl p-4">
+                <div className="bg-white dark:bg-gray-900 rounded-b-3xl shadow-xl p-4 border-t border-gray-100 dark:border-gray-800">
                     <div className="flex gap-3 items-end">
                         <div className="flex-1 relative">
                             <input
@@ -336,22 +298,26 @@ export function Chatbot({user, onBack}) {
                                 value={inputText}
                                 onChange={(e) => setInputText(e.target.value)}
                                 onKeyPress={handleKeyPress}
-                                placeholder={t('chatbot.typePlaceholder')}
+                                placeholder={t('chatbot.typePlaceholder', 'Scrivi una domanda sulla tua destinazione...')}
                                 disabled={isTyping}
-                                className="w-full px-4 py-3 pr-12 border-2 border-gray-200 rounded-xl focus:border-indigo-600 focus:outline-none transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                className={`w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-2xl text-sm font-medium ${themeFocusBorder} focus:outline-none transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed`}
                             />
                         </div>
 
                         <button
+                            type="button"
                             onClick={sendMessage}
                             disabled={isTyping || !inputText.trim()}
-                            className="w-12 h-12 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center flex-shrink-0 hover:scale-105 active:scale-95"
+                            className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-md transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${themeBgBtn}`}
                         >
-                            <Send className="w-5 h-5"/>
+                            <Send className="w-5 h-5" />
                         </button>
                     </div>
                 </div>
+
             </div>
         </div>
     );
 }
+
+export default Chatbot;

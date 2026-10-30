@@ -57,17 +57,13 @@ namespace CulturalGuideBACKEND.Controllers
 
                 _logger.LogInformation($"Chat request from user {request.UserId} for {request.Municipality} in language {request.Language}");
 
-                // Get user from database
+                // Get user from database if exists
                 var user = await _db.Users
                     .FirstOrDefaultAsync(u => u.Id.ToString() == request.UserId || u.Email == request.UserId);
 
                 if (user == null)
                 {
-                    return NotFound(new ChatResponse 
-                    { 
-                        Success = false, 
-                        Error = "User not found" 
-                    });
+                    _logger.LogInformation("Chat request from visitor/guest: {UserId}. Proceeding with session.", request.UserId);
                 }
 
                 // Build context from database

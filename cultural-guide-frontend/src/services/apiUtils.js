@@ -1,9 +1,9 @@
-import defaultImage from "../images/ImageWithFallback.jpg";
+import { getAuthenticFallbackImage } from "./imageResolver";
 
 export const API_BASE_URL = "http://localhost:5203/api/eppoiapi";
 
 export const cleanMunicipalityName = (municipality) => {
-    if (!municipality) return "Lugano";
+    if (!municipality) return "Olten";
     return municipality
         .replace(/^Com[m]?une\s+(di|de)\s+/i, "")
         .replace(/^Gemeinde\s+/i, "")
@@ -17,9 +17,11 @@ export const fetchCategoryCards = async (endpoint, municipality, language = "it"
     }
 
     const cleanCity = cleanMunicipalityName(municipality);
+    const country = localStorage.getItem("cultural_guide_country") || "";
 
     try {
-        const url = `${API_BASE_URL}/${endpoint}?municipality=${encodeURIComponent(cleanCity)}&language=${encodeURIComponent(language)}`;
+        const countryParam = country ? `&country=${encodeURIComponent(country)}` : "";
+        const url = `${API_BASE_URL}/${endpoint}?municipality=${encodeURIComponent(cleanCity)}&language=${encodeURIComponent(language)}${countryParam}`;
         const response = await fetch(url, {
             method: "GET",
             headers: {
@@ -36,19 +38,24 @@ export const fetchCategoryCards = async (endpoint, municipality, language = "it"
         const data = await response.json();
         const items = Array.isArray(data) ? data : (data?.items || []);
 
-        return items.map((item) => {
+        return items.map((item, idx) => {
             let img = item.imagePath || item.image || item.primaryImage;
             if (img && img.startsWith('/')) {
                 img = `http://localhost:5203${img}`;
             }
 
+            const title = item.entityName || item.title || item.name || "Attrazione Culturale";
+            const authenticImg = (!img || img.includes("photo-1568084680786-a84f91d1153c"))
+                ? getAuthenticFallbackImage(title, cleanCity, country, idx)
+                : img;
+
             return {
                 id: item.entityId || item.id || `poi-${Math.random().toString(36).substring(2, 9)}`,
                 type: item.badgeText || item.type || defaultType,
-                image: img || defaultImage,
-                title: item.entityName || item.title || item.name || "Attrazione Svizzera",
+                image: authenticImg,
+                title: title,
                 description: item.description || item.badgeText || "",
-                location: item.address || item.location || `${cleanCity}, Svizzera`,
+                location: item.address || item.location || `${cleanCity}`,
                 openingHours: item.openingHours || "Tutti i giorni 09:00 - 18:00",
                 latitude: item.latitude ?? null,
                 longitude: item.longitude ?? null,

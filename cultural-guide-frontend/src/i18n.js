@@ -7,20 +7,18 @@ import de from './locales/de.json';
 import it from './locales/it.json';
 
 
+const initialLang = (typeof window !== "undefined" && localStorage.getItem("lang")) || "it";
+
 i18n
     .use(initReactI18next)
     .init({
         resources: {
-            en: {translation: en},
-            de: {translation: de},
-            it: {translation: it},
+            en: { translation: en },
+            de: { translation: de },
+            it: { translation: it },
         },
-        lng: "en",
+        lng: initialLang,
         fallbackLng: "it",
-
-        //ns means namespace. It is used to group translations into different files.
-        // can have multiple namespaces, in case you want to divide a huge
-        // translation into smaller pieces and load them on demand
         interpolation: {
             escapeValue: false,
             formatSeparator: ",",

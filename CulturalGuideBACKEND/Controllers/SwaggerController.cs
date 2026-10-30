@@ -30,19 +30,21 @@ public class EppoiApiController : ControllerBase
     }
 
     // ===============================
-    //  MUNICIPALITIES (SWITZERLAND)
+    //  MUNICIPALITIES (SWITZERLAND & ITALY)
     // ===============================
     [HttpGet("municipalities")]
-    public async Task<IActionResult> GetMunicipalities([FromQuery] string? search = null)
+    public async Task<IActionResult> GetMunicipalities(
+        [FromQuery] string? search = null,
+        [FromQuery] string? country = null)
     {
-        _logger.LogInformation("Fetching Swiss municipalities (search: {Search})...", search);
+        _logger.LogInformation("Fetching municipalities (search: {Search}, country: {Country})...", search, country);
         if (!string.IsNullOrWhiteSpace(search))
         {
-            var searchResults = await _swaggerEppoiService.SearchMunicipalitiesAsync(search);
+            var searchResults = await _swaggerEppoiService.SearchMunicipalitiesAsync(search, country);
             return Ok(searchResults);
         }
 
-        var municipalities = await _swaggerEppoiService.GetMunicipalitiesAsync();
+        var municipalities = await _swaggerEppoiService.GetMunicipalitiesAsync(country);
         return Ok(municipalities);
     }
 
@@ -51,7 +53,7 @@ public class EppoiApiController : ControllerBase
     // ===============================
     [HttpGet("categories")]
     public async Task<IActionResult> GetCategories(
-        [FromQuery] string municipality = "Lugano",
+        [FromQuery] string municipality = "Olten",
         [FromQuery] string language = "it")
     {
         var categories = await _swaggerEppoiService.GetCategoriesAsync(municipality, language);
@@ -62,7 +64,7 @@ public class EppoiApiController : ControllerBase
     //  MAP ENDPOINT
     // ===============================
     [HttpGet("map")]
-    public async Task<IActionResult> GetMap([FromQuery] string municipality = "Lugano")
+    public async Task<IActionResult> GetMap([FromQuery] string municipality = "Olten")
     {
         var mapData = await _swaggerEppoiService.GetMapAsync(municipality);
         return Ok(mapData);
@@ -74,21 +76,23 @@ public class EppoiApiController : ControllerBase
     [HttpGet("cards")]
     public async Task<IActionResult> GetCards(
         [FromQuery] string? category,
-        [FromQuery] string municipality = "Lugano",
-        [FromQuery] string language = "it")
+        [FromQuery] string municipality = "Olten",
+        [FromQuery] string language = "it",
+        [FromQuery] string? country = null)
     {
         var cat = string.IsNullOrWhiteSpace(category) ? "artculture" : category;
-        var cards = await _swaggerEppoiService.GetCategoryCardsAsync(cat, municipality, language);
+        var cards = await _swaggerEppoiService.GetCategoryCardsAsync(cat, municipality, language, country);
         return Ok(cards);
     }
 
     [HttpGet("{category}/card-list")]
     public async Task<IActionResult> GetCardList(
         string category,
-        [FromQuery] string municipality = "Lugano",
-        [FromQuery] string language = "it")
+        [FromQuery] string municipality = "Olten",
+        [FromQuery] string language = "it",
+        [FromQuery] string? country = null)
     {
-        var cards = await _swaggerEppoiService.GetCategoryCardsAsync(category, municipality, language);
+        var cards = await _swaggerEppoiService.GetCategoryCardsAsync(category, municipality, language, country);
         return Ok(cards);
     }
 
@@ -97,84 +101,93 @@ public class EppoiApiController : ControllerBase
     // ===============================
     [HttpGet("eat-and-drinks")]
     public async Task<IActionResult> GetEatAndDrinks(
-        [FromQuery] string municipality = "Lugano",
-        [FromQuery] string language = "it")
+        [FromQuery] string municipality = "Olten",
+        [FromQuery] string language = "it",
+        [FromQuery] string? country = null)
     {
-        var cards = await _swaggerEppoiService.GetCategoryCardsAsync("eatanddrink", municipality, language);
+        var cards = await _swaggerEppoiService.GetCategoryCardsAsync("eatanddrink", municipality, language, country);
         return Ok(cards);
     }
 
     [HttpGet("art-culture")]
     public async Task<IActionResult> GetArtAndCulture(
-        [FromQuery] string municipality = "Lugano",
-        [FromQuery] string language = "it")
+        [FromQuery] string municipality = "Olten",
+        [FromQuery] string language = "it",
+        [FromQuery] string? country = null)
     {
-        var cards = await _swaggerEppoiService.GetCategoryCardsAsync("artculture", municipality, language);
+        var cards = await _swaggerEppoiService.GetCategoryCardsAsync("artculture", municipality, language, country);
         return Ok(cards);
     }
 
     [HttpGet("nature")]
     public async Task<IActionResult> GetNature(
-        [FromQuery] string municipality = "Lugano",
-        [FromQuery] string language = "it")
+        [FromQuery] string municipality = "Olten",
+        [FromQuery] string language = "it",
+        [FromQuery] string? country = null)
     {
-        var cards = await _swaggerEppoiService.GetCategoryCardsAsync("nature", municipality, language);
+        var cards = await _swaggerEppoiService.GetCategoryCardsAsync("nature", municipality, language, country);
         return Ok(cards);
     }
 
     [HttpGet("routes")]
     [HttpGet("itineraries")]
     public async Task<IActionResult> GetRoutes(
-        [FromQuery] string municipality = "Lugano",
-        [FromQuery] string language = "it")
+        [FromQuery] string municipality = "Olten",
+        [FromQuery] string language = "it",
+        [FromQuery] string? country = null)
     {
-        var cards = await _swaggerEppoiService.GetCategoryCardsAsync("routes", municipality, language);
+        var cards = await _swaggerEppoiService.GetCategoryCardsAsync("routes", municipality, language, country);
         return Ok(cards);
     }
 
     [HttpGet("events")]
     public async Task<IActionResult> GetEvents(
-        [FromQuery] string municipality = "Lugano",
-        [FromQuery] string language = "it")
+        [FromQuery] string municipality = "Olten",
+        [FromQuery] string language = "it",
+        [FromQuery] string? country = null)
     {
-        var cards = await _swaggerEppoiService.GetCategoryCardsAsync("events", municipality, language);
+        var cards = await _swaggerEppoiService.GetCategoryCardsAsync("events", municipality, language, country);
         return Ok(cards);
     }
 
     [HttpGet("sleep")]
     public async Task<IActionResult> GetSleep(
-        [FromQuery] string municipality = "Lugano",
-        [FromQuery] string language = "it")
+        [FromQuery] string municipality = "Olten",
+        [FromQuery] string language = "it",
+        [FromQuery] string? country = null)
     {
-        var cards = await _swaggerEppoiService.GetCategoryCardsAsync("sleep", municipality, language);
+        var cards = await _swaggerEppoiService.GetCategoryCardsAsync("sleep", municipality, language, country);
         return Ok(cards);
     }
 
     [HttpGet("typical-products")]
     public async Task<IActionResult> GetTypicalProducts(
-        [FromQuery] string municipality = "Lugano",
-        [FromQuery] string language = "it")
+        [FromQuery] string municipality = "Olten",
+        [FromQuery] string language = "it",
+        [FromQuery] string? country = null)
     {
-        var cards = await _swaggerEppoiService.GetCategoryCardsAsync("typicalproducts", municipality, language);
+        var cards = await _swaggerEppoiService.GetCategoryCardsAsync("typicalproducts", municipality, language, country);
         return Ok(cards);
     }
 
     [HttpGet("shopping")]
     public async Task<IActionResult> GetShopping(
-        [FromQuery] string municipality = "Lugano",
-        [FromQuery] string language = "it")
+        [FromQuery] string municipality = "Olten",
+        [FromQuery] string language = "it",
+        [FromQuery] string? country = null)
     {
-        var cards = await _swaggerEppoiService.GetCategoryCardsAsync("shopping", municipality, language);
+        var cards = await _swaggerEppoiService.GetCategoryCardsAsync("shopping", municipality, language, country);
         return Ok(cards);
     }
 
     [HttpGet("entertainment-leisure")]
     [HttpGet("recreation-fun")]
     public async Task<IActionResult> GetEntertainmentLeisure(
-        [FromQuery] string municipality = "Lugano",
-        [FromQuery] string language = "it")
+        [FromQuery] string municipality = "Olten",
+        [FromQuery] string language = "it",
+        [FromQuery] string? country = null)
     {
-        var cards = await _swaggerEppoiService.GetCategoryCardsAsync("entertainmentleisure", municipality, language);
+        var cards = await _swaggerEppoiService.GetCategoryCardsAsync("entertainmentleisure", municipality, language, country);
         return Ok(cards);
     }
 
@@ -182,10 +195,11 @@ public class EppoiApiController : ControllerBase
     [HttpGet("economic-operators")]
     [HttpGet("points-of-sale")]
     public async Task<IActionResult> GetServices(
-        [FromQuery] string municipality = "Lugano",
-        [FromQuery] string language = "it")
+        [FromQuery] string municipality = "Olten",
+        [FromQuery] string language = "it",
+        [FromQuery] string? country = null)
     {
-        var cards = await _swaggerEppoiService.GetCategoryCardsAsync("services", municipality, language);
+        var cards = await _swaggerEppoiService.GetCategoryCardsAsync("services", municipality, language, country);
         return Ok(cards);
     }
 
@@ -193,10 +207,11 @@ public class EppoiApiController : ControllerBase
     [HttpGet("articles")]
     [HttpGet("organizations")]
     public async Task<IActionResult> GetArticles(
-        [FromQuery] string municipality = "Lugano",
-        [FromQuery] string language = "it")
+        [FromQuery] string municipality = "Olten",
+        [FromQuery] string language = "it",
+        [FromQuery] string? country = null)
     {
-        var cards = await _swaggerEppoiService.GetCategoryCardsAsync("articles", municipality, language);
+        var cards = await _swaggerEppoiService.GetCategoryCardsAsync("articles", municipality, language, country);
         return Ok(cards);
     }
 
@@ -282,6 +297,9 @@ public class EppoiApiController : ControllerBase
             }
 
             var cleanMuni = SwaggerEppoiApiService.CleanMunicipality(profileVectorDto.Municipality);
+            var country = !string.IsNullOrWhiteSpace(profileVectorDto.Country)
+                ? profileVectorDto.Country.ToUpperInvariant()
+                : (SwaggerEppoiApiService.IsItalianDestination(cleanMuni, null) ? "IT" : "CH");
 
             var existingPreference = await _db.ProfileVector
                 .FirstOrDefaultAsync(p => p.UserId == profileVectorDto.UserId);
@@ -289,13 +307,16 @@ public class EppoiApiController : ControllerBase
             if (existingPreference != null)
             {
                 existingPreference.Municipality = cleanMuni;
+                existingPreference.Country = country;
+                if (!string.IsNullOrWhiteSpace(profileVectorDto.FirstName)) existingPreference.FirstName = profileVectorDto.FirstName;
+                if (!string.IsNullOrWhiteSpace(profileVectorDto.LastName)) existingPreference.LastName = profileVectorDto.LastName;
                 existingPreference.StartTime = profileVectorDto.StartTime;
                 existingPreference.EndTime = profileVectorDto.EndTime;
                 existingPreference.SelectedCategories = JsonSerializer.Serialize(profileVectorDto.SelectedCategories);
                 existingPreference.UpdatedAt = DateTime.UtcNow;
 
                 _db.ProfileVector.Update(existingPreference);
-                _logger.LogInformation("Updated preferences for user: {UserId}", profileVectorDto.UserId);
+                _logger.LogInformation("Updated preferences for user: {UserId} ({Country} - {Municipality})", profileVectorDto.UserId, country, cleanMuni);
             }
             else
             {
@@ -303,6 +324,9 @@ public class EppoiApiController : ControllerBase
                 {
                     UserId = profileVectorDto.UserId,
                     Municipality = cleanMuni,
+                    Country = country,
+                    FirstName = profileVectorDto.FirstName,
+                    LastName = profileVectorDto.LastName,
                     StartTime = profileVectorDto.StartTime,
                     EndTime = profileVectorDto.EndTime,
                     SelectedCategories = JsonSerializer.Serialize(profileVectorDto.SelectedCategories),
@@ -311,7 +335,22 @@ public class EppoiApiController : ControllerBase
                 };
 
                 _db.ProfileVector.Add(newPreference);
-                _logger.LogInformation("Created new preferences for user: {UserId}", profileVectorDto.UserId);
+                _logger.LogInformation("Created new preferences for user: {UserId} ({Country} - {Municipality})", profileVectorDto.UserId, country, cleanMuni);
+            }
+
+            // Also update ApplicationUser Name if user is registered in Identity DB
+            if (int.TryParse(profileVectorDto.UserId, out var uid))
+            {
+                var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == uid);
+                if (user != null && (!string.IsNullOrWhiteSpace(profileVectorDto.FirstName) || !string.IsNullOrWhiteSpace(profileVectorDto.LastName)))
+                {
+                    var fullName = $"{profileVectorDto.FirstName} {profileVectorDto.LastName}".Trim();
+                    if (!string.IsNullOrWhiteSpace(fullName))
+                    {
+                        user.Name = fullName;
+                        _db.Users.Update(user);
+                    }
+                }
             }
 
             await _db.SaveChangesAsync();
@@ -321,6 +360,9 @@ public class EppoiApiController : ControllerBase
                 message = "Preferences saved successfully",
                 userId = profileVectorDto.UserId,
                 municipality = cleanMuni,
+                country = country,
+                firstName = profileVectorDto.FirstName,
+                lastName = profileVectorDto.LastName,
                 categoriesCount = profileVectorDto.SelectedCategories.Count
             });
         }
@@ -346,10 +388,27 @@ public class EppoiApiController : ControllerBase
 
             var categories = JsonSerializer.Deserialize<List<string>>(profileVector.SelectedCategories) ?? new List<string>();
 
+            // If user's first/last name not in ProfileVector, try to fetch from Users table
+            var firstName = profileVector.FirstName;
+            var lastName = profileVector.LastName;
+            if (string.IsNullOrWhiteSpace(firstName) && int.TryParse(userId, out var parsedUid))
+            {
+                var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == parsedUid);
+                if (user != null && !string.IsNullOrWhiteSpace(user.Name))
+                {
+                    var parts = user.Name.Split(' ', 2);
+                    firstName = parts[0];
+                    if (parts.Length > 1) lastName = parts[1];
+                }
+            }
+
             return Ok(new
             {
                 userId = profileVector.UserId,
                 municipality = profileVector.Municipality,
+                country = profileVector.Country ?? (SwaggerEppoiApiService.IsItalianDestination(profileVector.Municipality, null) ? "IT" : "CH"),
+                firstName = firstName,
+                lastName = lastName,
                 startTime = profileVector.StartTime,
                 endTime = profileVector.EndTime,
                 selectedCategories = categories,

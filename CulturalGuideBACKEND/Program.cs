@@ -150,6 +150,10 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 	db.Database.Migrate();
 
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE ProfileVector ADD COLUMN Country TEXT;"); } catch {}
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE ProfileVector ADD COLUMN FirstName TEXT;"); } catch {}
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE ProfileVector ADD COLUMN LastName TEXT;"); } catch {}
+
     if (!db.Users.Any())
     {
         var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<User>>();

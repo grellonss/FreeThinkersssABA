@@ -22,31 +22,118 @@ namespace CulturalGuideBACKEND.Services.SwaggerEppoiService
         private readonly ILogger<SwaggerEppoiApiService> _logger;
         private readonly AppDbContext _db;
 
-        // Predefined Swiss Cities with accurate coordinates and high-res imagery
-        private static readonly List<SwissCityInfo> SwissCities = new()
+        // Predefined Swiss Cities with accurate coordinates and high-res imagery (ESN Olten partner)
+        // Predefined Swiss Cities with accurate coordinates and authentic imagery (ESN Olten partner)
+        private static readonly List<CityLocationInfo> SwissCities = new()
         {
-            new("Lugano", "TI", 46.0037, 8.9511, "https://images.unsplash.com/photo-1573155993874-d5d48af862ba?w=800&auto=format&fit=crop&q=80"),
-            new("Zürich", "ZH", 47.3769, 8.5417, "https://images.unsplash.com/photo-1515488764276-beab7607c1e6?w=800&auto=format&fit=crop&q=80"),
-            new("Bern", "BE", 46.9480, 7.4474, "https://images.unsplash.com/photo-1589308078059-be1415eab4c3?w=800&auto=format&fit=crop&q=80"),
-            new("Genève", "GE", 46.2044, 6.1432, "https://images.unsplash.com/photo-1573157268794-074f636dd81c?w=800&auto=format&fit=crop&q=80"),
-            new("Luzern", "LU", 47.0502, 8.3093, "https://images.unsplash.com/photo-1527631746610-bca00a040d60?w=800&auto=format&fit=crop&q=80"),
-            new("Basel", "BS", 47.5596, 7.5886, "https://images.unsplash.com/photo-1573152958734-522207829467?w=800&auto=format&fit=crop&q=80"),
-            new("Bellinzona", "TI", 46.1928, 9.0227, "https://images.unsplash.com/photo-1568084680786-a84f91d1153c?w=800&auto=format&fit=crop&q=80"),
-            new("Locarno", "TI", 46.1685, 8.7984, "https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?w=800&auto=format&fit=crop&q=80"),
-            new("Lausanne", "VD", 46.5197, 6.6323, "https://images.unsplash.com/photo-1530122037265-a5f1f91d3b99?w=800&auto=format&fit=crop&q=80"),
-            new("Zermatt", "VS", 45.9765, 7.7491, "https://images.unsplash.com/photo-1531310197839-ccf54634509e?w=800&auto=format&fit=crop&q=80"),
-            new("St. Moritz", "GR", 46.4908, 9.8355, "https://images.unsplash.com/photo-1502784444187-359ac186c5bb?w=800&auto=format&fit=crop&q=80"),
-            new("Interlaken", "BE", 46.6863, 7.8632, "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=800&auto=format&fit=crop&q=80"),
-            new("Montreux", "VD", 46.4312, 6.9107, "https://images.unsplash.com/photo-1467269204594-9661b134dd2b?w=800&auto=format&fit=crop&q=80"),
-            new("St. Gallen", "SG", 47.4245, 9.3767, "https://images.unsplash.com/photo-1516483638261-f4dbaf036963?w=800&auto=format&fit=crop&q=80"),
-            new("Ascona", "TI", 46.1558, 8.7731, "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&auto=format&fit=crop&q=80"),
-            new("Mendrisio", "TI", 45.8703, 8.9863, "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&auto=format&fit=crop&q=80"),
-            new("Neuchâtel", "NE", 46.9896, 6.9293, "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&auto=format&fit=crop&q=80"),
-            new("Sion", "VS", 46.2331, 7.3606, "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&auto=format&fit=crop&q=80"),
-            new("Chur", "GR", 46.8508, 9.5320, "https://images.unsplash.com/photo-1491557345352-5929e343eb89?w=800&auto=format&fit=crop&q=80"),
-            new("Fribourg", "FR", 46.8065, 7.1620, "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=800&auto=format&fit=crop&q=80"),
-            new("Schaffhausen", "SH", 47.6959, 8.6380, "https://images.unsplash.com/photo-1433086966358-54859d0ed716?w=800&auto=format&fit=crop&q=80"),
-            new("Thun", "BE", 46.7580, 7.6280, "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&auto=format&fit=crop&q=80")
+            new("Olten", "SO", "CH", 47.3522, 7.9077, "https://commons.wikimedia.org/wiki/Special:FilePath/Alte%20Br%C3%BCcke%20in%20Olten-20140514.jpg?width=800"),
+            new("Lugano", "TI", "CH", 46.0037, 8.9511, "https://images.unsplash.com/photo-1573155993874-d5d48af862ba?w=800&auto=format&fit=crop&q=80"),
+            new("Zürich", "ZH", "CH", 47.3769, 8.5417, "https://images.unsplash.com/photo-1515488764276-beab7607c1e6?w=800&auto=format&fit=crop&q=80"),
+            new("Bern", "BE", "CH", 46.9480, 7.4474, "https://images.unsplash.com/photo-1589308078059-be1415eab4c3?w=800&auto=format&fit=crop&q=80"),
+            new("Genève", "GE", "CH", 46.2044, 6.1432, "https://images.unsplash.com/photo-1573157268794-074f636dd81c?w=800&auto=format&fit=crop&q=80"),
+            new("Luzern", "LU", "CH", 47.0502, 8.3093, "https://images.unsplash.com/photo-1527631746610-bca00a040d60?w=800&auto=format&fit=crop&q=80"),
+            new("Basel", "BS", "CH", 47.5596, 7.5886, "https://images.unsplash.com/photo-1573152958734-522207829467?w=800&auto=format&fit=crop&q=80"),
+            new("Bellinzona", "TI", "CH", 46.1928, 9.0227, "https://commons.wikimedia.org/wiki/Special:FilePath/Castelgrande_Bellinzona.jpg?width=800"),
+            new("Locarno", "TI", "CH", 46.1685, 8.7984, "https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?w=800&auto=format&fit=crop&q=80"),
+            new("Lausanne", "VD", "CH", 46.5197, 6.6323, "https://images.unsplash.com/photo-1530122037265-a5f1f91d3b99?w=800&auto=format&fit=crop&q=80"),
+            new("Zermatt", "VS", "CH", 45.9765, 7.7491, "https://images.unsplash.com/photo-1531310197839-ccf54634509e?w=800&auto=format&fit=crop&q=80"),
+            new("St. Moritz", "GR", "CH", 46.4908, 9.8355, "https://images.unsplash.com/photo-1502784444187-359ac186c5bb?w=800&auto=format&fit=crop&q=80"),
+            new("Interlaken", "BE", "CH", 46.6863, 7.8632, "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=800&auto=format&fit=crop&q=80"),
+            new("Montreux", "VD", "CH", 46.4312, 6.9107, "https://images.unsplash.com/photo-1467269204594-9661b134dd2b?w=800&auto=format&fit=crop&q=80"),
+            new("St. Gallen", "SG", "CH", 47.4245, 9.3767, "https://images.unsplash.com/photo-1513094735237-8f2714d57c13?w=800&auto=format&fit=crop&q=80"),
+            new("Ascona", "TI", "CH", 46.1558, 8.7731, "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&auto=format&fit=crop&q=80"),
+            new("Mendrisio", "TI", "CH", 45.8703, 8.9863, "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&auto=format&fit=crop&q=80"),
+            new("Neuchâtel", "NE", "CH", 46.9896, 6.9293, "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&auto=format&fit=crop&q=80"),
+            new("Sion", "VS", "CH", 46.2331, 7.3606, "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&auto=format&fit=crop&q=80"),
+            new("Chur", "GR", "CH", 46.8508, 9.5320, "https://images.unsplash.com/photo-1491557345352-5929e343eb89?w=800&auto=format&fit=crop&q=80"),
+            new("Fribourg", "FR", "CH", 46.8065, 7.1620, "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=800&auto=format&fit=crop&q=80"),
+            new("Schaffhausen", "SH", "CH", 47.6959, 8.6380, "https://images.unsplash.com/photo-1433086966358-54859d0ed716?w=800&auto=format&fit=crop&q=80"),
+            new("Thun", "BE", "CH", 46.7580, 7.6280, "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&auto=format&fit=crop&q=80")
+        };
+
+        // Predefined Italian Cities (Marche & partners - ESN Camerino partner)
+        private static readonly List<CityLocationInfo> ItalianCities = new()
+        {
+            new("Camerino", "MC", "IT", 43.1364, 13.0683, "https://commons.wikimedia.org/wiki/Special:FilePath/Camerino_veduta_04.jpg?width=800"),
+            new("Massignano", "AP", "IT", 43.0519, 13.7972, "https://images.unsplash.com/photo-1533105079780-92b9be482077?w=800&auto=format&fit=crop&q=80"),
+            new("Urbino", "PU", "IT", 43.7262, 12.6366, "https://images.unsplash.com/photo-1548625361-19597282b0f4?w=800&auto=format&fit=crop&q=80"),
+            new("Ascoli Piceno", "AP", "IT", 42.8546, 13.5758, "https://images.unsplash.com/photo-1523906834658-6e24ef2386f9?w=800&auto=format&fit=crop&q=80"),
+            new("Macerata", "MC", "IT", 43.3002, 13.4533, "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=800&auto=format&fit=crop&q=80"),
+            new("Recanati", "MC", "IT", 43.4037, 13.5505, "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800&auto=format&fit=crop&q=80"),
+            new("Ancona", "AN", "IT", 43.6158, 13.5189, "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=800&auto=format&fit=crop&q=80"),
+            new("San Benedetto del Tronto", "AP", "IT", 42.9467, 13.8828, "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&auto=format&fit=crop&q=80"),
+            new("Fermo", "FM", "IT", 43.1614, 13.7176, "https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?w=800&auto=format&fit=crop&q=80"),
+            new("Pesaro", "PU", "IT", 43.9125, 12.9155, "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&auto=format&fit=crop&q=80"),
+            new("Jesi", "AN", "IT", 43.5225, 13.2439, "https://images.unsplash.com/photo-1513094735237-8f2714d57c13?w=800&auto=format&fit=crop&q=80"),
+            new("Loreto", "AN", "IT", 43.4419, 13.6094, "https://commons.wikimedia.org/wiki/Special:FilePath/Santuario_della_Santa_Casa_di_Loreto.jpg?width=800"),
+            new("Senigallia", "AN", "IT", 43.7144, 13.2183, "https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?w=800&auto=format&fit=crop&q=80")
+        };
+
+        // Rich pool of unique, authentic Swiss images (Guaranteed distinct - no repetition!)
+        private static readonly string[] DistinctSwissImages = new[]
+        {
+            "https://commons.wikimedia.org/wiki/Special:FilePath/Alte%20Br%C3%BCcke%20in%20Olten-20140514.jpg?width=800",
+            "https://commons.wikimedia.org/wiki/Special:FilePath/Old_town_panorama_with_covered_bridge_and_Stadtturm%2C_Olten%2C_Solothurn.jpg?width=800",
+            "https://commons.wikimedia.org/wiki/Special:FilePath/Aarburg_-_Festung_01.jpg?width=800",
+            "https://commons.wikimedia.org/wiki/Special:FilePath/Olten%20-%20Rathaus%202.jpg?width=800",
+            "https://upload.wikimedia.org/wikipedia/commons/a/ad/Picswiss_SO-18-02.jpg",
+            "https://commons.wikimedia.org/wiki/Special:FilePath/Solothurn_St_Ursenkathedrale.jpg?width=800",
+            "https://commons.wikimedia.org/wiki/Special:FilePath/Castelgrande_Bellinzona.jpg?width=800",
+            "https://commons.wikimedia.org/wiki/Special:FilePath/Bern_-_Zytglogge_01.jpg?width=800",
+            "https://commons.wikimedia.org/wiki/Special:FilePath/Gandria_-_Lago_di_Lugano.jpg?width=800",
+            "https://commons.wikimedia.org/wiki/Special:FilePath/Luzern_Kapellbr%C3%BCcke_mit_Wasserturm.jpg?width=800",
+            "https://commons.wikimedia.org/wiki/Special:FilePath/Grossm%C3%BCnster_Z%C3%BCrich.jpg?width=800",
+            "https://commons.wikimedia.org/wiki/Special:FilePath/Chillon_Castle_from_Montreux.jpg?width=800",
+            "https://images.unsplash.com/photo-1527631746610-bca00a040d60?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1531310197839-ccf54634509e?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1589308078059-be1415eab4c3?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1515488764276-beab7607c1e6?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1573155993874-d5d48af862ba?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1502784444187-359ac186c5bb?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1530122037265-a5f1f91d3b99?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1467269204594-9661b134dd2b?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1573157268794-074f636dd81c?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1573152958734-522207829467?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1549007994-cb92caebd54b?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1544025162-d76694265947?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1433086966358-54859d0ed716?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1491557345352-5929e343eb89?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&auto=format&fit=crop&q=80"
+        };
+
+        // Rich pool of unique, authentic Italian & Marche images (Guaranteed distinct - no repetition!)
+        private static readonly string[] DistinctItalianImages = new[]
+        {
+            "https://commons.wikimedia.org/wiki/Special:FilePath/Camerino_veduta_04.jpg?width=800",
+            "https://commons.wikimedia.org/wiki/Special:FilePath/Palazzo_Ducale_Camerino.jpg?width=800",
+            "https://commons.wikimedia.org/wiki/Special:FilePath/Rocca_Borgesca_Camerino.jpg?width=800",
+            "https://commons.wikimedia.org/wiki/Special:FilePath/Santuario_della_Santa_Casa_di_Loreto.jpg?width=800",
+            "https://images.unsplash.com/photo-1548625361-19597282b0f4?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1523906834658-6e24ef2386f9?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1543429776-2782fc8e1acd?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1533105079780-92b9be482077?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1513094735237-8f2714d57c13?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1544025162-d76694265947?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?w=800&auto=format&fit=crop&q=80"
         };
 
         public SwaggerEppoiApiService(
@@ -56,17 +143,17 @@ namespace CulturalGuideBACKEND.Services.SwaggerEppoiService
             AppDbContext db)
         {
             _httpClient = httpClientFactory.CreateClient();
-            _httpClient.DefaultRequestHeaders.Add("User-Agent", "CulturalGuideSwitzerland/2.0 (SwissCulturalGuide; info@culturalguide.ch)");
+            _httpClient.DefaultRequestHeaders.Add("User-Agent", "CulturalGuide/3.0 (DualSwissItalian; info@culturalguide.eu)");
             _config = config;
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _db = db;
         }
 
-        public record SwissCityInfo(string Name, string Canton, double Latitude, double Longitude, string Image);
+        public record CityLocationInfo(string Name, string ProvinceOrCanton, string Country, double Latitude, double Longitude, string Image);
 
         public static string CleanMunicipality(string? name)
         {
-            if (string.IsNullOrWhiteSpace(name)) return "Lugano";
+            if (string.IsNullOrWhiteSpace(name)) return "Olten";
             var clean = name.Trim();
 
             // Strip typical prefixes if present
@@ -80,26 +167,59 @@ namespace CulturalGuideBACKEND.Services.SwaggerEppoiService
                 }
             }
 
-            // If it ends with cantonal code like " (TI)" or " (ZH)", extract the city name
+            // If it ends with code in parenthesis like " (TI)", " (MC)", extract the city name
             var parenIdx = clean.IndexOf('(');
             if (parenIdx > 0)
             {
                 clean = clean.Substring(0, parenIdx).Trim();
             }
 
-            return string.IsNullOrWhiteSpace(clean) ? "Lugano" : clean;
+            return string.IsNullOrWhiteSpace(clean) ? "Olten" : clean;
         }
 
-        private SwissCityInfo ResolveCity(string? municipality)
+        public static bool IsItalianDestination(string? municipality, string? country = null)
+        {
+            if (!string.IsNullOrWhiteSpace(country))
+            {
+                if (country.Equals("IT", StringComparison.OrdinalIgnoreCase) ||
+                    country.Equals("Italia", StringComparison.OrdinalIgnoreCase) ||
+                    country.Equals("Italy", StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(municipality)) return false;
+            var clean = CleanMunicipality(municipality);
+            return ItalianCities.Any(c => c.Name.Equals(clean, StringComparison.OrdinalIgnoreCase) ||
+                                          clean.Contains(c.Name, StringComparison.OrdinalIgnoreCase) ||
+                                          c.Name.Contains(clean, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private CityLocationInfo ResolveCity(string? municipality, string? country = null)
         {
             var clean = CleanMunicipality(municipality);
-            var match = SwissCities.FirstOrDefault(c => c.Name.Equals(clean, StringComparison.OrdinalIgnoreCase));
-            if (match != null) return match;
+            var isIt = IsItalianDestination(clean, country);
 
-            var partial = SwissCities.FirstOrDefault(c => c.Name.Contains(clean, StringComparison.OrdinalIgnoreCase) || clean.Contains(c.Name, StringComparison.OrdinalIgnoreCase));
-            if (partial != null) return partial;
+            if (isIt)
+            {
+                var matchIt = ItalianCities.FirstOrDefault(c => c.Name.Equals(clean, StringComparison.OrdinalIgnoreCase));
+                if (matchIt != null) return matchIt;
 
-            // Default to Lugano (TI)
+                var partialIt = ItalianCities.FirstOrDefault(c => c.Name.Contains(clean, StringComparison.OrdinalIgnoreCase) || clean.Contains(c.Name, StringComparison.OrdinalIgnoreCase));
+                if (partialIt != null) return partialIt;
+
+                // Default to Camerino (MC) for Italian destinations
+                return ItalianCities[0];
+            }
+
+            var matchCh = SwissCities.FirstOrDefault(c => c.Name.Equals(clean, StringComparison.OrdinalIgnoreCase));
+            if (matchCh != null) return matchCh;
+
+            var partialCh = SwissCities.FirstOrDefault(c => c.Name.Contains(clean, StringComparison.OrdinalIgnoreCase) || clean.Contains(c.Name, StringComparison.OrdinalIgnoreCase));
+            if (partialCh != null) return partialCh;
+
+            // Default to Olten (SO) for Swiss destinations
             return SwissCities[0];
         }
 
@@ -109,9 +229,26 @@ namespace CulturalGuideBACKEND.Services.SwaggerEppoiService
         public async Task<IEnumerable<EppoiMunicipalitiesDTO>> GetMunicipalitiesIntoDbAsync()
         {
             int added = 0;
+            // Seed Swiss cities
             foreach (var city in SwissCities)
             {
-                string legalName = $"{city.Name} ({city.Canton})";
+                string legalName = $"{city.Name} ({city.ProvinceOrCanton})";
+                bool exists = await _db.Municipalities.AnyAsync(x => x.LegalName == legalName || x.LegalName == city.Name);
+                if (!exists)
+                {
+                    _db.Municipalities.Add(new Municipality
+                    {
+                        LegalName = legalName,
+                        ImagePath = city.Image
+                    });
+                    added++;
+                }
+            }
+
+            // Seed Italian cities
+            foreach (var city in ItalianCities)
+            {
+                string legalName = $"{city.Name} ({city.ProvinceOrCanton})";
                 bool exists = await _db.Municipalities.AnyAsync(x => x.LegalName == legalName || x.LegalName == city.Name);
                 if (!exists)
                 {
@@ -127,104 +264,167 @@ namespace CulturalGuideBACKEND.Services.SwaggerEppoiService
             if (added > 0)
             {
                 await _db.SaveChangesAsync();
-                _logger.LogInformation($"Seeded {added} Swiss municipalities into SQLite DB.");
+                _logger.LogInformation($"Seeded {added} Swiss & Italian municipalities into SQLite DB.");
             }
 
             return await GetMunicipalitiesAsync();
         }
 
-        public async Task<IEnumerable<EppoiMunicipalitiesDTO>> GetMunicipalitiesAsync()
+        public async Task<IEnumerable<EppoiMunicipalitiesDTO>> GetMunicipalitiesAsync(string? country = null)
         {
-            var dbList = await _db.Municipalities.ToListAsync();
+            var isIt = country?.Equals("IT", StringComparison.OrdinalIgnoreCase) == true;
+            var isCh = country?.Equals("CH", StringComparison.OrdinalIgnoreCase) == true;
 
-            if (!dbList.Any())
+            var list = new List<EppoiMunicipalitiesDTO>();
+
+            if (isIt)
             {
-                await GetMunicipalitiesIntoDbAsync();
-                dbList = await _db.Municipalities.ToListAsync();
+                return ItalianCities.Select(c => new EppoiMunicipalitiesDTO
+                {
+                    LegalName = $"{c.Name} ({c.ProvinceOrCanton})",
+                    Canton = c.ProvinceOrCanton,
+                    Country = "IT",
+                    Latitude = c.Latitude,
+                    Longitude = c.Longitude,
+                    ImagePath = c.Image
+                }).ToList();
             }
 
-            return dbList.Select(m =>
+            if (isCh)
             {
-                var clean = CleanMunicipality(m.LegalName);
-                var city = SwissCities.FirstOrDefault(c => c.Name.Equals(clean, StringComparison.OrdinalIgnoreCase));
-                return new EppoiMunicipalitiesDTO
+                return SwissCities.Select(c => new EppoiMunicipalitiesDTO
                 {
-                    LegalName = m.LegalName,
-                    ImagePath = !string.IsNullOrEmpty(m.ImagePath) ? m.ImagePath : (city?.Image ?? "https://images.unsplash.com/photo-1573155993874-d5d48af862ba?w=800"),
-                    Canton = city?.Canton,
-                    Latitude = city?.Latitude,
-                    Longitude = city?.Longitude
-                };
-            }).ToList();
+                    LegalName = $"{c.Name} ({c.ProvinceOrCanton})",
+                    Canton = c.ProvinceOrCanton,
+                    Country = "CH",
+                    Latitude = c.Latitude,
+                    Longitude = c.Longitude,
+                    ImagePath = c.Image
+                }).ToList();
+            }
+
+            // Both countries (Olten and Camerino at top)
+            list.AddRange(SwissCities.Select(c => new EppoiMunicipalitiesDTO
+            {
+                LegalName = $"{c.Name} ({c.ProvinceOrCanton})",
+                Canton = c.ProvinceOrCanton,
+                Country = "CH",
+                Latitude = c.Latitude,
+                Longitude = c.Longitude,
+                ImagePath = c.Image
+            }));
+
+            list.AddRange(ItalianCities.Select(c => new EppoiMunicipalitiesDTO
+            {
+                LegalName = $"{c.Name} ({c.ProvinceOrCanton})",
+                Canton = c.ProvinceOrCanton,
+                Country = "IT",
+                Latitude = c.Latitude,
+                Longitude = c.Longitude,
+                ImagePath = c.Image
+            }));
+
+            return list;
         }
 
-        public async Task<IEnumerable<EppoiMunicipalitiesDTO>> SearchMunicipalitiesAsync(string query)
+        public Task<IEnumerable<EppoiMunicipalitiesDTO>> GetMunicipalitiesAsync() => GetMunicipalitiesAsync(null);
+
+        public async Task<IEnumerable<EppoiMunicipalitiesDTO>> SearchMunicipalitiesAsync(string query, string? country = null)
         {
             if (string.IsNullOrWhiteSpace(query))
             {
-                return await GetMunicipalitiesAsync();
+                return await GetMunicipalitiesAsync(country);
             }
 
             var cleanQuery = query.Trim();
-            var matches = SwissCities
-                .Where(c => c.Name.Contains(cleanQuery, StringComparison.OrdinalIgnoreCase) ||
-                            c.Canton.Equals(cleanQuery, StringComparison.OrdinalIgnoreCase))
-                .Select(c => new EppoiMunicipalitiesDTO
-                {
-                    LegalName = $"{c.Name} ({c.Canton})",
-                    ImagePath = c.Image,
-                    Canton = c.Canton,
-                    Latitude = c.Latitude,
-                    Longitude = c.Longitude
-                })
-                .ToList();
+            var matches = new List<EppoiMunicipalitiesDTO>();
 
-            // Try GeoAdmin Search API for any Swiss municipality
-            try
+            var allowCh = string.IsNullOrWhiteSpace(country) || country.Equals("CH", StringComparison.OrdinalIgnoreCase);
+            var allowIt = string.IsNullOrWhiteSpace(country) || country.Equals("IT", StringComparison.OrdinalIgnoreCase);
+
+            if (allowCh)
             {
-                var geoUrl = $"https://api3.geo.admin.ch/rest/services/ech/SearchServer?type=locations&origins=gg25&searchText={Uri.EscapeDataString(cleanQuery)}";
-                var geoResponse = await _httpClient.GetAsync(geoUrl);
-                if (geoResponse.IsSuccessStatusCode)
-                {
-                    var content = await geoResponse.Content.ReadAsStringAsync();
-                    using var doc = JsonDocument.Parse(content);
-                    if (doc.RootElement.TryGetProperty("results", out var resultsElement))
+                matches.AddRange(SwissCities
+                    .Where(c => c.Name.Contains(cleanQuery, StringComparison.OrdinalIgnoreCase) ||
+                                c.ProvinceOrCanton.Equals(cleanQuery, StringComparison.OrdinalIgnoreCase))
+                    .Select(c => new EppoiMunicipalitiesDTO
                     {
-                        foreach (var res in resultsElement.EnumerateArray())
-                        {
-                            if (res.TryGetProperty("attrs", out var attrs))
-                            {
-                                var label = attrs.TryGetProperty("label", out var lbl) ? lbl.GetString() ?? "" : "";
-                                // Strip HTML tags like <b>Lugano (TI)</b>
-                                label = Regex.Replace(label, "<.*?>", string.Empty).Trim();
-                                var lat = attrs.TryGetProperty("lat", out var lt) ? lt.GetDouble() : 46.8;
-                                var lon = attrs.TryGetProperty("lon", out var ln) ? ln.GetDouble() : 8.2;
-                                var detail = attrs.TryGetProperty("detail", out var dt) ? dt.GetString() ?? "" : "";
-                                var canton = detail.Split(' ').LastOrDefault()?.ToUpperInvariant() ?? "CH";
+                        LegalName = $"{c.Name} ({c.ProvinceOrCanton})",
+                        ImagePath = c.Image,
+                        Canton = c.ProvinceOrCanton,
+                        Country = "CH",
+                        Latitude = c.Latitude,
+                        Longitude = c.Longitude
+                    }));
+            }
 
-                                if (!matches.Any(m => m.LegalName.Equals(label, StringComparison.OrdinalIgnoreCase)))
+            if (allowIt)
+            {
+                matches.AddRange(ItalianCities
+                    .Where(c => c.Name.Contains(cleanQuery, StringComparison.OrdinalIgnoreCase) ||
+                                c.ProvinceOrCanton.Equals(cleanQuery, StringComparison.OrdinalIgnoreCase))
+                    .Select(c => new EppoiMunicipalitiesDTO
+                    {
+                        LegalName = $"{c.Name} ({c.ProvinceOrCanton})",
+                        ImagePath = c.Image,
+                        Canton = c.ProvinceOrCanton,
+                        Country = "IT",
+                        Latitude = c.Latitude,
+                        Longitude = c.Longitude
+                    }));
+            }
+
+            // If Swiss search requested or generic search, also try GeoAdmin
+            if (allowCh && matches.Count < 5)
+            {
+                try
+                {
+                    var geoUrl = $"https://api3.geo.admin.ch/rest/services/ech/SearchServer?type=locations&origins=gg25&searchText={Uri.EscapeDataString(cleanQuery)}";
+                    var geoResponse = await _httpClient.GetAsync(geoUrl);
+                    if (geoResponse.IsSuccessStatusCode)
+                    {
+                        var content = await geoResponse.Content.ReadAsStringAsync();
+                        using var doc = JsonDocument.Parse(content);
+                        if (doc.RootElement.TryGetProperty("results", out var resultsElement))
+                        {
+                            foreach (var res in resultsElement.EnumerateArray())
+                            {
+                                if (res.TryGetProperty("attrs", out var attrs))
                                 {
-                                    matches.Add(new EppoiMunicipalitiesDTO
+                                    var label = attrs.TryGetProperty("label", out var lbl) ? lbl.GetString() ?? "" : "";
+                                    label = Regex.Replace(label, "<.*?>", string.Empty).Trim();
+                                    var lat = attrs.TryGetProperty("lat", out var lt) ? lt.GetDouble() : 47.3;
+                                    var lon = attrs.TryGetProperty("lon", out var ln) ? ln.GetDouble() : 7.9;
+                                    var detail = attrs.TryGetProperty("detail", out var dt) ? dt.GetString() ?? "" : "";
+                                    var canton = detail.Split(' ').LastOrDefault()?.ToUpperInvariant() ?? "CH";
+
+                                    if (!matches.Any(m => m.LegalName.Equals(label, StringComparison.OrdinalIgnoreCase)))
                                     {
-                                        LegalName = label,
-                                        ImagePath = "https://images.unsplash.com/photo-1527631746610-bca00a040d60?w=800&auto=format&fit=crop&q=80",
-                                        Canton = canton,
-                                        Latitude = lat,
-                                        Longitude = lon
-                                    });
+                                        matches.Add(new EppoiMunicipalitiesDTO
+                                        {
+                                            LegalName = label,
+                                            ImagePath = "https://images.unsplash.com/photo-1527631746610-bca00a040d60?w=800&auto=format&fit=crop&q=80",
+                                            Canton = canton,
+                                            Country = "CH",
+                                            Latitude = lat,
+                                            Longitude = lon
+                                        });
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "GeoAdmin search failed for query: {Query}", query);
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "GeoAdmin search failed for query: {Query}", query);
+                }
             }
 
             return matches;
         }
+
+        public Task<IEnumerable<EppoiMunicipalitiesDTO>> SearchMunicipalitiesAsync(string query) => SearchMunicipalitiesAsync(query, null);
 
         // =====================
         // CATEGORIES
@@ -240,7 +440,7 @@ namespace CulturalGuideBACKEND.Services.SwaggerEppoiService
                 {
                     Category = "artculture",
                     Label = isIt ? "Arte, Musei e Monumenti" : (isDe ? "Kunst, Museen & Denkmäler" : "Art, Museums & Heritage"),
-                    ImagePath = "https://images.unsplash.com/photo-1568084680786-a84f91d1153c?w=600&auto=format&fit=crop&q=80"
+                    ImagePath = "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80"
                 },
                 new()
                 {
@@ -317,10 +517,11 @@ namespace CulturalGuideBACKEND.Services.SwaggerEppoiService
         // =====================
         // CATEGORY CARDS MAIN FETCH
         // =====================
-        public async Task<IEnumerable<EppoiUnifiedCardDTO>> GetCategoryCardsAsync(string category, string municipality, string language)
+        public async Task<IEnumerable<EppoiUnifiedCardDTO>> GetCategoryCardsAsync(string category, string municipality, string language, string? country = null)
         {
             var cleanCity = CleanMunicipality(municipality);
-            var cityInfo = ResolveCity(cleanCity);
+            var isItalian = IsItalianDestination(cleanCity, country);
+            var cityInfo = ResolveCity(cleanCity, country);
             var langCode = language?.ToLowerInvariant() switch
             {
                 var s when s != null && s.StartsWith("de") => "de",
@@ -342,7 +543,7 @@ namespace CulturalGuideBACKEND.Services.SwaggerEppoiService
             if (cachedCards.Count >= 3)
             {
                 _logger.LogInformation($"Returning {cachedCards.Count} cached items for {cleanCity}/{category} ({langCode})");
-                return cachedCards.Select(c => new EppoiUnifiedCardDTO
+                var cachedList = cachedCards.Select(c => new EppoiUnifiedCardDTO
                 {
                     EntityId = c.EntityId,
                     EntityName = c.Title,
@@ -355,36 +556,185 @@ namespace CulturalGuideBACKEND.Services.SwaggerEppoiService
                     Language = c.Language,
                     Municipality = c.Municipality
                 }).ToList();
+
+                // Guarantee that even cached items don't have repeating images
+                EnsureUniqueImages(cachedList, isItalian);
+                return cachedList;
             }
 
-            // 2. Fetch from Official Swiss Geodata (geo.admin.ch KGS Inventar)
-            var geoCards = await FetchFromGeoAdminAsync(cleanCity, normalizedCategory, langCode);
-            results.AddRange(geoCards);
-
-            // 3. Fetch from Wikipedia Geosearch around city coordinates
-            var wikiCards = await FetchFromWikipediaAsync(cityInfo, normalizedCategory, langCode);
-            foreach (var w in wikiCards)
+            if (isItalian)
             {
-                if (!results.Any(r => r.EntityName?.Equals(w.EntityName, StringComparison.OrdinalIgnoreCase) == true))
+                // 2a. Fetch from Eppoi Marche API (with 2.5s cancellation timeout)
+                var eppoiCards = await FetchFromEppoiMarcheAsync(cleanCity, normalizedCategory, langCode);
+                results.AddRange(eppoiCards);
+
+                // 2b. Fetch from Wikipedia Geosearch around Italian city coordinates
+                var wikiCards = await FetchFromWikipediaAsync(cityInfo, normalizedCategory, langCode);
+                foreach (var w in wikiCards)
                 {
-                    results.AddRange(new[] { w });
+                    if (!results.Any(r => r.EntityName?.Equals(w.EntityName, StringComparison.OrdinalIgnoreCase) == true))
+                    {
+                        results.Add(w);
+                    }
+                }
+
+                // 2c. Enrich with authentic Italian/Marche cultural cards (Camerino, Massignano, etc.)
+                var curatedCards = GetCuratedItalianCards(cleanCity, cityInfo, normalizedCategory, langCode);
+                foreach (var c in curatedCards)
+                {
+                    if (!results.Any(r => r.EntityName?.Equals(c.EntityName, StringComparison.OrdinalIgnoreCase) == true))
+                    {
+                        results.Add(c);
+                    }
+                }
+            }
+            else
+            {
+                // 2a. Fetch from Official Swiss Geodata (geo.admin.ch KGS Inventar)
+                var geoCards = await FetchFromGeoAdminAsync(cleanCity, normalizedCategory, langCode);
+                results.AddRange(geoCards);
+
+                // 2b. Fetch from Wikipedia Geosearch around Swiss city coordinates
+                var wikiCards = await FetchFromWikipediaAsync(cityInfo, normalizedCategory, langCode);
+                foreach (var w in wikiCards)
+                {
+                    if (!results.Any(r => r.EntityName?.Equals(w.EntityName, StringComparison.OrdinalIgnoreCase) == true))
+                    {
+                        results.Add(w);
+                    }
+                }
+
+                // 2c. Enrich with authentic Swiss regional sights (Olten, Lugano, etc.)
+                var curatedCards = GetCuratedSwissCards(cleanCity, cityInfo, normalizedCategory, langCode);
+                foreach (var c in curatedCards)
+                {
+                    if (!results.Any(r => r.EntityName?.Equals(c.EntityName, StringComparison.OrdinalIgnoreCase) == true))
+                    {
+                        results.Add(c);
+                    }
                 }
             }
 
-            // 4. If fewer than 4 items or specific categories, enrich with Authentic Swiss Regional Sights
-            var curatedCards = GetCuratedSwissCards(cleanCity, cityInfo, normalizedCategory, langCode);
-            foreach (var c in curatedCards)
-            {
-                if (!results.Any(r => r.EntityName?.Equals(c.EntityName, StringComparison.OrdinalIgnoreCase) == true))
-                {
-                    results.Add(c);
-                }
-            }
+            // 2d. Guarantee distinct, non-repeating images across all cards!
+            EnsureUniqueImages(results, isItalian);
 
-            // 5. Cache newly fetched cards into DB for fast retrieval and Gemini chatbot context
+            // 3. Cache newly fetched cards into DB for fast retrieval and Gemini chatbot context
             await SaveCardsToDbAsync(results, cleanCity, normalizedCategory, langCode);
 
             return results;
+        }
+
+        private static void EnsureUniqueImages(List<EppoiUnifiedCardDTO> cards, bool isItalian)
+        {
+            var pool = isItalian ? DistinctItalianImages : DistinctSwissImages;
+            var usedImages = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            int poolIndex = 0;
+
+            foreach (var card in cards)
+            {
+                if (string.IsNullOrWhiteSpace(card.ImagePath) || usedImages.Contains(card.ImagePath) || card.ImagePath.Contains("photo-1568084680786-a84f91d1153c"))
+                {
+                    while (poolIndex < pool.Length && usedImages.Contains(pool[poolIndex]))
+                    {
+                        poolIndex++;
+                    }
+
+                    if (poolIndex < pool.Length)
+                    {
+                        card.ImagePath = pool[poolIndex];
+                        poolIndex++;
+                    }
+                    else
+                    {
+                        var baseImg = pool[(poolIndex++) % pool.Length];
+                        card.ImagePath = $"{baseImg}&sig={Guid.NewGuid().ToString("N")[..6]}";
+                    }
+                }
+
+                if (!string.IsNullOrWhiteSpace(card.ImagePath))
+                {
+                    usedImages.Add(card.ImagePath);
+                }
+            }
+        }
+
+        public Task<IEnumerable<EppoiUnifiedCardDTO>> GetCategoryCardsAsync(string category, string municipality, string language)
+            => GetCategoryCardsAsync(category, municipality, language, null);
+
+        // =====================
+        // EPPOI MARCHE API (ITALY)
+        // =====================
+        private async Task<List<EppoiUnifiedCardDTO>> FetchFromEppoiMarcheAsync(string cleanCity, string category, string langCode)
+        {
+            var list = new List<EppoiUnifiedCardDTO>();
+            try
+            {
+                using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(2500));
+                string ep = category switch
+                {
+                    "artculture" => "art-culture",
+                    "nature" => "nature",
+                    "events" => "events",
+                    "sleep" => "sleep",
+                    "shopping" => "shopping",
+                    "entertainmentleisure" => "entertainment-leisure",
+                    "eatanddrink" => "eat-and-drinks",
+                    "typicalproducts" => "typical-products",
+                    "routes" => "routes",
+                    _ => category
+                };
+
+                var url = $"https://apispm.eppoi.io/api/{ep}/card-list?municipality={Uri.EscapeDataString(cleanCity)}&language={langCode}";
+                var response = await _httpClient.GetAsync(url, cts.Token);
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync(cts.Token);
+                    using var doc = JsonDocument.Parse(content);
+                    if (doc.RootElement.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var el in doc.RootElement.EnumerateArray())
+                        {
+                            var id = el.TryGetProperty("entityId", out var idProp) ? idProp.GetString() : Guid.NewGuid().ToString();
+                            var name = el.TryGetProperty("entityName", out var nProp) ? nProp.GetString() : null;
+                            if (string.IsNullOrWhiteSpace(name) && el.TryGetProperty("title", out var tProp))
+                            {
+                                name = tProp.GetString();
+                            }
+                            if (string.IsNullOrWhiteSpace(name)) continue;
+
+                            var badge = el.TryGetProperty("badgeText", out var bProp) ? bProp.GetString() : "Marche Turismo";
+                            var addr = el.TryGetProperty("address", out var aProp) ? aProp.GetString() : $"{cleanCity}, Marche, Italia";
+                            var desc = el.TryGetProperty("description", out var dProp) ? dProp.GetString() : badge;
+                            var img = el.TryGetProperty("imagePath", out var imgProp) ? imgProp.GetString() : null;
+                            if (!string.IsNullOrWhiteSpace(img) && !img.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                            {
+                                img = $"https://eppoi.io{img}";
+                            }
+                            if (string.IsNullOrWhiteSpace(img))
+                            {
+                                img = "https://images.unsplash.com/photo-1543429776-2782fc8e1acd?w=800&auto=format&fit=crop&q=80";
+                            }
+
+                            list.Add(new EppoiUnifiedCardDTO
+                            {
+                                EntityId = id,
+                                EntityName = name,
+                                BadgeText = badge,
+                                Address = addr,
+                                ImagePath = img,
+                                Description = desc,
+                                Language = langCode,
+                                Municipality = cleanCity
+                            });
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("Eppoi Marche API unreachable or timed out for {City}/{Category}: {Msg}", cleanCity, category, ex.Message);
+            }
+            return list;
         }
 
         // =====================
@@ -426,7 +776,7 @@ namespace CulturalGuideBACKEND.Services.SwaggerEppoiService
 
                         if (string.IsNullOrWhiteSpace(image))
                         {
-                            image = "https://images.unsplash.com/photo-1568084680786-a84f91d1153c?w=800&auto=format&fit=crop&q=80";
+                            image = await TryFindAuthenticWebImageAsync(label, cleanCity, kanton, langCode);
                         }
 
                         var categoryLabel = langCode switch
@@ -463,10 +813,62 @@ namespace CulturalGuideBACKEND.Services.SwaggerEppoiService
             return list;
         }
 
+        private async Task<string> TryFindAuthenticWebImageAsync(string query, string cityName, string kanton, string langCode)
+        {
+            try
+            {
+                var cleanQuery = System.Text.RegularExpressions.Regex.Replace(query, @"\s*\(.*?\)\s*", " ").Trim();
+                cleanQuery = cleanQuery.Replace("Dorfstrasse/", "").Replace("Strasse", "").Trim();
+
+                var wikiDomain = langCode == "de" || langCode == "it" ? $"{langCode}.wikipedia.org" : "de.wikipedia.org";
+                var searchUrl = $"https://{wikiDomain}/w/api.php?action=query&generator=search&gsrsearch={Uri.EscapeDataString(cleanQuery + " " + cityName)}&gsrlimit=3&prop=pageimages&pithumbsize=800&format=json";
+
+                using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(2000));
+                var resp = await _httpClient.GetAsync(searchUrl, cts.Token);
+                if (resp.IsSuccessStatusCode)
+                {
+                    var json = await resp.Content.ReadAsStringAsync(cts.Token);
+                    using var doc = JsonDocument.Parse(json);
+                    if (doc.RootElement.TryGetProperty("query", out var qElem) &&
+                        qElem.TryGetProperty("pages", out var pagesElem))
+                    {
+                        foreach (var page in pagesElem.EnumerateObject())
+                        {
+                            if (page.Value.TryGetProperty("thumbnail", out var thumbElem) &&
+                                thumbElem.TryGetProperty("source", out var srcElem))
+                            {
+                                var foundUrl = srcElem.GetString();
+                                if (!string.IsNullOrWhiteSpace(foundUrl))
+                                {
+                                    return foundUrl;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Could not fetch web image for {Query}", query);
+            }
+
+            // Authentic destination photos
+            if (cityName.Equals("Olten", StringComparison.OrdinalIgnoreCase))
+            {
+                return "https://commons.wikimedia.org/wiki/Special:FilePath/Old_town_panorama_with_covered_bridge_and_Stadtturm%2C_Olten%2C_Solothurn.jpg?width=800";
+            }
+            if (cityName.Equals("Camerino", StringComparison.OrdinalIgnoreCase))
+            {
+                return "https://commons.wikimedia.org/wiki/Special:FilePath/Palazzo_Ducale_Camerino.jpg?width=800";
+            }
+
+            return "https://commons.wikimedia.org/wiki/Special:FilePath/Alte%20Br%C3%BCcke%20in%20Olten-20140514.jpg?width=800";
+        }
+
         // =====================
         // WIKIPEDIA GEOSEARCH
         // =====================
-        private async Task<List<EppoiUnifiedCardDTO>> FetchFromWikipediaAsync(SwissCityInfo cityInfo, string category, string langCode)
+        private async Task<List<EppoiUnifiedCardDTO>> FetchFromWikipediaAsync(CityLocationInfo cityInfo, string category, string langCode)
         {
             var list = new List<EppoiUnifiedCardDTO>();
             try
@@ -513,6 +915,10 @@ namespace CulturalGuideBACKEND.Services.SwaggerEppoiService
                 if (detailDoc.RootElement.TryGetProperty("query", out var dqElem) &&
                     dqElem.TryGetProperty("pages", out var pagesElem))
                 {
+                    var isIt = cityInfo.Country == "IT";
+                    var badgePrefix = isIt ? "Italia Cultura" : "Svizzera Turismo";
+                    var countryName = isIt ? "Italia" : "Svizzera";
+
                     foreach (var prop in pagesElem.EnumerateObject())
                     {
                         var page = prop.Value;
@@ -527,9 +933,13 @@ namespace CulturalGuideBACKEND.Services.SwaggerEppoiService
                             image = src.GetString();
                         }
 
-                        if (string.IsNullOrWhiteSpace(image))
+                        if (string.IsNullOrWhiteSpace(image) && page.TryGetProperty("pageimage", out var piProp))
                         {
-                            image = "https://images.unsplash.com/photo-1527631746610-bca00a040d60?w=800&auto=format&fit=crop&q=80";
+                            var piStr = piProp.GetString();
+                            if (!string.IsNullOrWhiteSpace(piStr))
+                            {
+                                image = $"https://commons.wikimedia.org/wiki/Special:FilePath/{Uri.EscapeDataString(piStr)}?width=800";
+                            }
                         }
 
                         var coords = coordsMap.TryGetValue(pageId, out var c) ? c : (cityInfo.Latitude, cityInfo.Longitude);
@@ -538,8 +948,8 @@ namespace CulturalGuideBACKEND.Services.SwaggerEppoiService
                         {
                             EntityId = $"wiki-{pageId}",
                             EntityName = title,
-                            BadgeText = $"Svizzera Turismo - {cityInfo.Canton}",
-                            Address = $"{cityInfo.Name} ({cityInfo.Canton}), Svizzera",
+                            BadgeText = $"{badgePrefix} - {cityInfo.ProvinceOrCanton}",
+                            Address = $"{cityInfo.Name} ({cityInfo.ProvinceOrCanton}), {countryName}",
                             ImagePath = image,
                             Description = extract.Length > 300 ? extract.Substring(0, 300) + "..." : extract,
                             Latitude = coords.Item1,
@@ -559,25 +969,57 @@ namespace CulturalGuideBACKEND.Services.SwaggerEppoiService
         }
 
         // =====================
-        // AUTHENTIC CURATED SWISS SIGHTS PER CATEGORY
+        // AUTHENTIC CURATED SWISS SIGHTS PER CATEGORY (ESN Olten Partner)
         // =====================
-        private List<EppoiUnifiedCardDTO> GetCuratedSwissCards(string cleanCity, SwissCityInfo city, string category, string langCode)
+        private List<EppoiUnifiedCardDTO> GetCuratedSwissCards(string cleanCity, CityLocationInfo city, string category, string langCode)
         {
             var isIt = langCode == "it";
             var isDe = langCode == "de";
 
             var list = new List<EppoiUnifiedCardDTO>();
 
+            // Olten specific highlights (ESN Olten partner)
+            if (cleanCity.Equals("Olten", StringComparison.OrdinalIgnoreCase))
+            {
+                list.Add(new EppoiUnifiedCardDTO
+                {
+                    EntityId = "curated-olten-holzbruecke",
+                    EntityName = isIt ? "Alte Holzbrücke (Ponte Storico in Legno)" : "Alte Holzbrücke Olten",
+                    BadgeText = isIt ? "Simbolo Storico di Olten (ESN)" : "Wahrzeichen von Olten",
+                    Address = "Brückengasse, 4600 Olten (SO), Svizzera",
+                    ImagePath = "https://commons.wikimedia.org/wiki/Special:FilePath/Alte%20Br%C3%BCcke%20in%20Olten-20140514.jpg?width=800",
+                    Description = isIt ? "Lo storico ponte in legno coperto sull'Aare, risalente al 1803, punto d'incontro simbolo degli studenti internazionali e di ESN Olten." : "Historic covered wooden bridge over the Aare river, iconic meeting place of international students and ESN Olten.",
+                    Latitude = 47.3512,
+                    Longitude = 7.9048,
+                    Language = langCode,
+                    Municipality = "Olten"
+                });
+
+                list.Add(new EppoiUnifiedCardDTO
+                {
+                    EntityId = "curated-olten-esn-hub",
+                    EntityName = isIt ? "ESN Olten Student & Cultural Hub" : "ESN Olten Student Centre",
+                    BadgeText = "ESN Olten Partner Community",
+                    Address = "Riggenbachstrasse 16, 4600 Olten (FHNW Campus)",
+                    ImagePath = "https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800&auto=format&fit=crop&q=80",
+                    Description = isIt ? "Il cuore pulsante dell'Erasmus Student Network Olten: eventi interculturali, visite guidate del cantone Soletta e scambi linguistici per studenti universitari." : "Hub of Erasmus Student Network Olten: cultural tours, campus events, and intercultural exchanges.",
+                    Latitude = 47.3489,
+                    Longitude = 7.9021,
+                    Language = langCode,
+                    Municipality = "Olten"
+                });
+            }
+
             if (category.Contains("eat") || category.Contains("drink"))
             {
                 list.Add(new EppoiUnifiedCardDTO
                 {
                     EntityId = $"curated-grotto-{cleanCity.ToLowerInvariant()}",
-                    EntityName = isIt ? $"Grotto Tipico {cleanCity}" : (isDe ? $"Traditionelles Tessiner Grotto {cleanCity}" : $"Traditional Swiss Grotto {cleanCity}"),
-                    BadgeText = isIt ? "Grotto & Cucina Tipica" : (isDe ? "Tessiner Spezialitäten" : "Traditional Swiss Cuisine"),
-                    Address = $"Via del Grotto 12, {cleanCity} ({city.Canton})",
+                    EntityName = isIt ? $"Grotto & Tradizione {cleanCity}" : (isDe ? $"Traditionelles Stübli {cleanCity}" : $"Traditional Swiss Dining {cleanCity}"),
+                    BadgeText = isIt ? "Cucina Tipica Svizzera" : (isDe ? "Schweizer Spezialitäten" : "Traditional Swiss Cuisine"),
+                    Address = $"Marktgasse, {cleanCity} ({city.ProvinceOrCanton}), Svizzera",
                     ImagePath = "https://images.unsplash.com/photo-1544025162-d76694265947?w=800&auto=format&fit=crop&q=80",
-                    Description = isIt ? "Autentica esperienza enogastronomica svizzera: polenta nostrana cotta al camino, risotto al Merlot, formaggi d'alpeggio e vini del territorio." : "Authentic Swiss culinary experience: local polenta, Merlot risotto, alpine cheeses and regional wines.",
+                    Description = isIt ? "Autentica esperienza enogastronomica svizzera: polenta nostrana, rösti dorato, formaggi d'alpeggio e vini del territorio elvetico." : "Authentic Swiss culinary experience: golden rösti, alpine cheeses and regional wines.",
                     Latitude = city.Latitude + 0.002,
                     Longitude = city.Longitude + 0.003,
                     Language = langCode,
@@ -588,9 +1030,9 @@ namespace CulturalGuideBACKEND.Services.SwaggerEppoiService
                     EntityId = $"curated-fondue-{cleanCity.ToLowerInvariant()}",
                     EntityName = isIt ? "Chalet del Formaggio & Fondue" : (isDe ? "Chalet Fondue Stübli" : "Swiss Fondue & Raclette Chalet"),
                     BadgeText = isIt ? "Fondue & Raclette AOP" : "Swiss Cheese Specialties",
-                    Address = $"Piazza Grande 5, {cleanCity} ({city.Canton})",
+                    Address = $"Bahnhofstrasse, {cleanCity} ({city.ProvinceOrCanton}), Svizzera",
                     ImagePath = "https://images.unsplash.com/photo-1549007994-cb92caebd54b?w=800&auto=format&fit=crop&q=80",
-                    Description = isIt ? "La vera fondue moitié-moitié con formaggi Gruyère AOP e Vacherin Fribourgeois, accompagnata da patate novelle e vino bianco Fendant." : "Traditional Swiss cheese fondue moitié-moitié with Gruyère AOP and regional specialties.",
+                    Description = isIt ? "La vera fondue moitié-moitié con formaggi Gruyère AOP e Vacherin Fribourgeois, accompagnata da patate novelle e vino Fendant." : "Traditional Swiss cheese fondue moitié-moitié with Gruyère AOP and regional specialties.",
                     Latitude = city.Latitude - 0.002,
                     Longitude = city.Longitude - 0.001,
                     Language = langCode,
@@ -602,11 +1044,11 @@ namespace CulturalGuideBACKEND.Services.SwaggerEppoiService
                 list.Add(new EppoiUnifiedCardDTO
                 {
                     EntityId = $"curated-nature-{cleanCity.ToLowerInvariant()}",
-                    EntityName = isIt ? $"Belvedere Panoramico & Vetta {cleanCity}" : $"Panoramic Summit & Nature Park {cleanCity}",
+                    EntityName = isIt ? $"Belvedere Panoramico & Sentieri di {cleanCity}" : $"Panoramic Summit & Trail of {cleanCity}",
                     BadgeText = isIt ? "Natura & Panorama Alpino" : "Alpine Nature & View",
-                    Address = $"{cleanCity} ({city.Canton}), Svizzera",
+                    Address = $"{cleanCity} ({city.ProvinceOrCanton}), Svizzera",
                     ImagePath = "https://images.unsplash.com/photo-1531310197839-ccf54634509e?w=800&auto=format&fit=crop&q=80",
-                    Description = isIt ? "Spettacolare punto panoramico con vista a 360 gradi sulle Alpi svizzere, sentieri botanici e aria pura d'alta quota." : "Spectacular panoramic viewpoint with 360-degree views over the Swiss Alps and alpine flora.",
+                    Description = isIt ? "Spettacolare punto panoramico con vista sui rilievi svizzeri, sentieri botanici e aria pura d'alta quota." : "Spectacular panoramic viewpoint with views over the Swiss landscape and nature trails.",
                     Latitude = city.Latitude + 0.008,
                     Longitude = city.Longitude + 0.006,
                     Language = langCode,
@@ -620,7 +1062,7 @@ namespace CulturalGuideBACKEND.Services.SwaggerEppoiService
                     EntityId = $"curated-chocolate-{cleanCity.ToLowerInvariant()}",
                     EntityName = isIt ? "Boutique del Cioccolato Svizzero Artigianale" : "Artisanal Swiss Chocolate Atelier",
                     BadgeText = isIt ? "Cioccolato Svizzero d'Eccellenza" : "Swiss Grand Cru Chocolate",
-                    Address = $"Via Nassa / Marktgasse, {cleanCity} ({city.Canton})",
+                    Address = $"Hauptgasse, {cleanCity} ({city.ProvinceOrCanton}), Svizzera",
                     ImagePath = "https://images.unsplash.com/photo-1549007994-cb92caebd54b?w=800&auto=format&fit=crop&q=80",
                     Description = isIt ? "Degustazione di praline artigianali, tavolette monorigine e cioccolato svizzero finissimo lavorato secondo la grande tradizione elvetica." : "Tasting of artisanal pralines, single-origin bars, and world-renowned Swiss chocolate.",
                     Latitude = city.Latitude + 0.001,
@@ -636,11 +1078,150 @@ namespace CulturalGuideBACKEND.Services.SwaggerEppoiService
                     EntityId = $"curated-route-{cleanCity.ToLowerInvariant()}",
                     EntityName = isIt ? $"Sentiero Panoramico di {cleanCity}" : $"Scenic Trail of {cleanCity}",
                     BadgeText = isIt ? "Escursionismo & Sentieri Svizzeri" : "Swiss Hiking Trail",
-                    Address = $"{cleanCity} ({city.Canton}), Percorso Segnalato",
+                    Address = $"{cleanCity} ({city.ProvinceOrCanton}), Percorso Segnalato",
                     ImagePath = "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&auto=format&fit=crop&q=80",
-                    Description = isIt ? "Itinerario pedonale perfettamente segnalato con cartelli gialli ufficiali di Sentieri Svizzeri, immerso tra vigneti e boschi panoramici." : "Official Swiss hiking path marked with iconic yellow signs, offering scenic mountain views.",
+                    Description = isIt ? "Itinerario pedonale perfettamente segnalato con cartelli gialli ufficiali di Sentieri Svizzeri, immerso nella natura panoramica." : "Official Swiss hiking path marked with iconic yellow signs, offering scenic mountain views.",
                     Latitude = city.Latitude + 0.004,
                     Longitude = city.Longitude - 0.003,
+                    Language = langCode,
+                    Municipality = cleanCity
+                });
+            }
+
+            return list;
+        }
+
+        // =====================
+        // AUTHENTIC CURATED ITALIAN SIGHTS PER CATEGORY (ESN Camerino & Marche Partner)
+        // =====================
+        private List<EppoiUnifiedCardDTO> GetCuratedItalianCards(string cleanCity, CityLocationInfo city, string category, string langCode)
+        {
+            var isIt = langCode == "it";
+            var list = new List<EppoiUnifiedCardDTO>();
+
+            // Camerino specific highlights (ESN Camerino partner)
+            if (cleanCity.Equals("Camerino", StringComparison.OrdinalIgnoreCase))
+            {
+                list.Add(new EppoiUnifiedCardDTO
+                {
+                    EntityId = "curated-camerino-rocca-borgesca",
+                    EntityName = isIt ? "Rocca Borgesca di Camerino" : "Borgia Fortress of Camerino",
+                    BadgeText = "Monumento Storico Rinascimentale",
+                    Address = "Piazzale della Rocca, 62032 Camerino (MC), Italia",
+                    ImagePath = "https://commons.wikimedia.org/wiki/Special:FilePath/Camerino_veduta_04.jpg?width=800",
+                    Description = isIt ? "Imponente fortezza rinascimentale del 1503 voluta da Cesare Borgia. Offre uno dei più straordinari belvederi panoramici sui monti Sibillini e giardini pubblici storici." : "Imposing 1503 Renaissance fortress built by Cesare Borgia with sweeping panoramic views of the Sibillini Mountains.",
+                    Latitude = 43.1345,
+                    Longitude = 13.0645,
+                    Language = langCode,
+                    Municipality = "Camerino"
+                });
+
+                list.Add(new EppoiUnifiedCardDTO
+                {
+                    EntityId = "curated-camerino-palazzo-ducale",
+                    EntityName = isIt ? "Palazzo Ducale dei Da Varano & Polo Museale" : "Ducal Palace of the Da Varano",
+                    BadgeText = "Patrimonio Storico & Culturale",
+                    Address = "Piazza Cavour, 62032 Camerino (MC), Italia",
+                    ImagePath = "https://images.unsplash.com/photo-1548625361-19597282b0f4?w=800&auto=format&fit=crop&q=80",
+                    Description = isIt ? "Sede della celebre signoria dei Da Varano e dell'Università di Camerino (UNICAM), fondata nel 1336. Magnifico cortile rinascimentale quadriporticato." : "Historic seat of the Da Varano dukes and University of Camerino (founded 1336) with Renaissance cloister.",
+                    Latitude = 43.1358,
+                    Longitude = 13.0679,
+                    Language = langCode,
+                    Municipality = "Camerino"
+                });
+
+                list.Add(new EppoiUnifiedCardDTO
+                {
+                    EntityId = "curated-camerino-orto-botanico",
+                    EntityName = isIt ? "Orto Botanico Carmela Cortini (UNICAM)" : "UNICAM Botanical Gardens",
+                    BadgeText = "Natura & Scienza Universitaria",
+                    Address = "Viale Pieragostini 1, 62032 Camerino (MC), Italia",
+                    ImagePath = "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&auto=format&fit=crop&q=80",
+                    Description = isIt ? "Fondato nel 1828 presso le antiche mura ducali, conserva oltre 1000 specie botaniche dell'Appennino centrale e serre secolari gestite dall'Università di Camerino." : "Historic botanical garden founded in 1828 by the University of Camerino, featuring rare Apennine flora.",
+                    Latitude = 43.1372,
+                    Longitude = 13.0695,
+                    Language = langCode,
+                    Municipality = "Camerino"
+                });
+
+                list.Add(new EppoiUnifiedCardDTO
+                {
+                    EntityId = "curated-camerino-esn-hub",
+                    EntityName = isIt ? "ESN Camerino Student Community Hub" : "ESN Camerino Student Hub",
+                    BadgeText = "ESN Camerino Partner Community",
+                    Address = "Campus Universitario UNICAM, 62032 Camerino (MC), Italia",
+                    ImagePath = "https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800&auto=format&fit=crop&q=80",
+                    Description = isIt ? "Punto di riferimento per gli studenti Erasmus e internazionali di Camerino: escursioni sui Sibillini, feste culturali e supporto all'integrazione accademica." : "Student community hub by Erasmus Student Network Camerino: cultural excursions, events, and student support.",
+                    Latitude = 43.1360,
+                    Longitude = 13.0670,
+                    Language = langCode,
+                    Municipality = "Camerino"
+                });
+            }
+
+            // Massignano specific highlights (original Eppoi Marche partner)
+            if (cleanCity.Equals("Massignano", StringComparison.OrdinalIgnoreCase))
+            {
+                list.Add(new EppoiUnifiedCardDTO
+                {
+                    EntityId = "curated-massignano-fischietti",
+                    EntityName = isIt ? "Museo dei Fischietti di Terracotta" : "Terracotta Whistle Museum",
+                    BadgeText = "Tradizione Artigianale Marchigiana",
+                    Address = "Piazza Garibaldi, 63061 Massignano (AP), Italia",
+                    ImagePath = "https://images.unsplash.com/photo-1533105079780-92b9be482077?w=800&auto=format&fit=crop&q=80",
+                    Description = isIt ? "Celebre museo unico in Italia dedicato all'antica arte dei 'fischiettai' di terracotta di Massignano, con collezioni storiche e botteghe tradizionali." : "Unique Italian museum celebrating the historic terracotta whistling artisans of Massignano.",
+                    Latitude = 43.0520,
+                    Longitude = 13.7975,
+                    Language = langCode,
+                    Municipality = "Massignano"
+                });
+            }
+
+            // General Italian / Marche categories
+            if (category.Contains("eat") || category.Contains("drink"))
+            {
+                list.Add(new EppoiUnifiedCardDTO
+                {
+                    EntityId = $"curated-osteria-{cleanCity.ToLowerInvariant()}",
+                    EntityName = isIt ? $"Osteria Tipica Marchigiana {cleanCity}" : $"Traditional Marche Osteria {cleanCity}",
+                    BadgeText = isIt ? "Cucina Tipica Marchigiana" : "Marche Regional Food",
+                    Address = $"Centro Storico, {cleanCity} ({city.ProvinceOrCanton}), Italia",
+                    ImagePath = "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&auto=format&fit=crop&q=80",
+                    Description = isIt ? "I sapori autentici delle Marche: vincisgrassi tradizionali al forno, ciauscolo IGP spalmabile, tagliatelle al tartufo e vino Vernaccia di Serrapetrona DOCG." : "Authentic Marche gastronomy: homemade vincisgrassi lasagna, ciauscolo salami, and local DOCG wines.",
+                    Latitude = city.Latitude + 0.001,
+                    Longitude = city.Longitude + 0.002,
+                    Language = langCode,
+                    Municipality = cleanCity
+                });
+            }
+            else if (category.Contains("typical") || category.Contains("product"))
+            {
+                list.Add(new EppoiUnifiedCardDTO
+                {
+                    EntityId = $"curated-ciauscolo-{cleanCity.ToLowerInvariant()}",
+                    EntityName = isIt ? "Bottega delle Eccellenze Marchigiane & Ciauscolo IGP" : "Marche Artisanal Food Atelier",
+                    BadgeText = isIt ? "Eccellenze Gastronomiche IGP" : "Artisanal Marche Specialties",
+                    Address = $"Corso Vittorio Emanuele, {cleanCity} ({city.ProvinceOrCanton}), Italia",
+                    ImagePath = "https://images.unsplash.com/photo-1544025162-d76694265947?w=800&auto=format&fit=crop&q=80",
+                    Description = isIt ? "Selezione delle migliori specialità marchigiane: ciauscolo IGP, formaggio di fossa dei Sibillini, olive all'ascolana e miele millefiori dei monti appenninici." : "Tasting of top Marche specialties: ciauscolo IGP salami, pit cheese, and Apennine honeys.",
+                    Latitude = city.Latitude - 0.001,
+                    Longitude = city.Longitude - 0.001,
+                    Language = langCode,
+                    Municipality = cleanCity
+                });
+            }
+            else if (category.Contains("nature"))
+            {
+                list.Add(new EppoiUnifiedCardDTO
+                {
+                    EntityId = $"curated-nature-it-{cleanCity.ToLowerInvariant()}",
+                    EntityName = isIt ? $"Sentieri dei Monti Sibillini & Colline di {cleanCity}" : $"Sibillini Nature Trail near {cleanCity}",
+                    BadgeText = isIt ? "Natura & Parchi Marchigiani" : "Nature & Hills of Marche",
+                    Address = $"{cleanCity} ({city.ProvinceOrCanton}), Italia",
+                    ImagePath = "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&auto=format&fit=crop&q=80",
+                    Description = isIt ? "Incantevoli percorsi naturalistici tra colline ondulate e vette appenniniche con vista verso il mare Adriatico e i monti azzurri." : "Scenic nature trails through Marche rolling hills and panoramic Apennine views.",
+                    Latitude = city.Latitude + 0.005,
+                    Longitude = city.Longitude + 0.005,
                     Language = langCode,
                     Municipality = cleanCity
                 });
@@ -773,7 +1354,7 @@ namespace CulturalGuideBACKEND.Services.SwaggerEppoiService
                     centerLongitude = cityInfo.Longitude,
                     zoom = 13,
                     municipality = cityInfo.Name,
-                    canton = cityInfo.Canton,
+                    canton = cityInfo.ProvinceOrCanton,
                     markers
                 };
             }
@@ -823,7 +1404,7 @@ namespace CulturalGuideBACKEND.Services.SwaggerEppoiService
                     Latitude = dbDetail.Latitude,
                     Longitude = dbDetail.Longitude,
                     OpeningHours = "09:00 - 18:00",
-                    Prices = "Ingresso gratuito o tariffa standard musei svizzeri"
+                    Prices = "Ingresso gratuito o tariffa standard musei"
                 };
             }
 
@@ -839,7 +1420,7 @@ namespace CulturalGuideBACKEND.Services.SwaggerEppoiService
         public Task<object> GetPointsOfInterestAsync(string city)
         {
             var info = ResolveCity(city);
-            return Task.FromResult<object>(new { municipality = info.Name, canton = info.Canton, latitude = info.Latitude, longitude = info.Longitude });
+            return Task.FromResult<object>(new { municipality = info.Name, canton = info.ProvinceOrCanton, latitude = info.Latitude, longitude = info.Longitude });
         }
 
         public Task<object> SearchExperiencesAsync(SwaggerEppoiRequest request)

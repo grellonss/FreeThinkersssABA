@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
-import { X, MapPin, Clock, Navigation } from 'lucide-react'; // Removed unused icons
+import React, { useState, useEffect } from 'react';
+import { X, MapPin, Clock, Navigation } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { handleImageFallback } from '../../services/imageResolver';
 
 // 1. Import Leaflet components and CSS
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
@@ -19,7 +20,7 @@ let DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
-// 2. Helper component to handle center changes programmatically
+// Helper component to handle center changes programmatically
 function ChangeView({ center, zoom }) {
     const map = useMap();
     useEffect(() => {
@@ -31,16 +32,24 @@ function ChangeView({ center, zoom }) {
 }
 
 export function MapView({
-                            locations = [],
-                            center,
-                            zoom = 13,
-                            height = '600px',
-                            onLocationClick
-                        }) {
+    locations = [],
+    center,
+    zoom = 13,
+    height = '500px',
+    activeCountry: propCountry,
+    onLocationClick
+}) {
     const [selectedLocation, setSelectedLocation] = useState(null);
-    const [mapCenter, setMapCenter] = useState([46.8182, 8.2275]); // Default to Switzerland
+    const activeCountry = propCountry || localStorage.getItem("cultural_guide_country") || "CH";
+    const isItalian = activeCountry === "IT";
+
+    const defaultCenter = isItalian ? [43.1364, 13.0683] : [47.3522, 7.9077];
+    const [mapCenter, setMapCenter] = useState(defaultCenter);
     const { t } = useTranslation();
 
+    // Primary country colors
+    const themeColor = isItalian ? '#047857' : '#991b1b'; // emerald-700 vs red-800
+    const themeBgClass = isItalian ? 'bg-emerald-700 hover:bg-emerald-800' : 'bg-red-800 hover:bg-red-900';
 
     // Initialize center logic
     useEffect(() => {
@@ -59,9 +68,6 @@ export function MapView({
     const handleMarkerClick = (location) => {
         if (!location) return;
         setSelectedLocation(location);
-        // Optional: Center map on click
-        // setMapCenter([location.latitude, location.longitude]);
-
         if (onLocationClick) {
             onLocationClick(location);
         }
@@ -71,37 +77,37 @@ export function MapView({
         setSelectedLocation(null);
     };
 
-    // 3. Create a custom Indigo Icon to match your previous design
-    // We use L.divIcon to render HTML as a marker
+    // Custom marker icon using country color
     const createCustomIcon = (title, isSelected) => {
+        const pinBg = isItalian
+            ? (isSelected ? '#065f46' : '#047857')
+            : (isSelected ? '#7f1d1d' : '#991b1b');
+
         return new L.DivIcon({
             className: 'custom-marker-icon',
             html: `
-                <div class="relative ${isSelected ? 'animate-bounce' : ''} transform -translate-x-1/2 -translate-y-full">
-                    
-                    <div class="w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-all ${
-                isSelected ? 'bg-indigo-600 ring-4 ring-indigo-200' : 'bg-indigo-600 hover:bg-indigo-700'
-            }">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map-pin"><path d="M20 10c0 6-9 13-9 13s-9-7-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                <div class="relative ${isSelected ? 'animate-bounce' : ''} transform -translate-x-1/2 -translate-y-full cursor-pointer">
+                    <div style="background-color: ${pinBg}; box-shadow: 0 4px 12px rgba(0,0,0,0.3);" class="w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+                        isSelected ? 'ring-4 ring-white' : ''
+                    }">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-9 13-9 13s-9-7-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                     </div>
-                    
-                    <div class="absolute left-1/2 top-full w-0 h-0 -translate-x-1/2 border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-indigo-600"></div>
-                    
-                    <div class="absolute top-full left-1/2 -translate-x-1/2 mt-3 whitespace-nowrap">
-                        <div class="bg-white px-2 py-1 rounded-lg shadow-md text-xs text-gray-900 font-semibold border border-gray-100">
-                            ${title || 'N/A'}
+                    <div style="border-top-color: ${pinBg};" class="absolute left-1/2 top-full w-0 h-0 -translate-x-1/2 border-l-[6px] border-r-[6px] border-t-[7px] border-l-transparent border-r-transparent"></div>
+                    <div class="absolute top-full left-1/2 -translate-x-1/2 mt-2 whitespace-nowrap pointer-events-none">
+                        <div class="bg-white/95 backdrop-blur-sm px-2 py-0.5 rounded-md shadow-md text-[11px] text-gray-900 font-bold border border-gray-100">
+                            ${(title || 'POI').length > 25 ? (title || 'POI').substring(0, 25) + '…' : (title || 'POI')}
                         </div>
                     </div>
                 </div>
             `,
-            iconSize: [40, 50],
-            iconAnchor: [20, 50],
+            iconSize: [36, 46],
+            iconAnchor: [18, 46],
         });
     };
 
     return (
-        <div className="relative w-full rounded-xl overflow-hidden shadow-xl" style={{ height, zIndex: 0 }}>
-            {/* 4. The Real Map Container */}
+        <div className="relative w-full rounded-2xl overflow-hidden shadow-md" style={{ height, zIndex: 0 }}>
+            {/* The Real Map Container */}
             <MapContainer
                 center={mapCenter}
                 zoom={zoom}
@@ -110,27 +116,23 @@ export function MapView({
             >
                 <ChangeView center={mapCenter} zoom={zoom} />
 
-                {/* The visual map tiles (OpenStreetMap) */}
+                {/* OpenStreetMap Tile Layer */}
                 <TileLayer
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
 
-                {/* 5. Render Markers tied to the map coordinates */}
+                {/* Render Markers */}
                 {Array.isArray(locations) &&
                     locations.map((location) => {
                         if (location.latitude == null || location.longitude == null) return null;
-
                         const isSelected = selectedLocation?.id === location.id;
-
-                        // Determina il testo da mostrare (Titolo o Tipo)
-                        const labelText = location.title || location.type;
+                        const labelText = location.title || location.type || location.entityName;
 
                         return (
                             <Marker
-                                key={location.id}
+                                key={location.id || `${location.latitude}-${location.longitude}`}
                                 position={[location.latitude, location.longitude]}
-                                // PASSA labelText QUI SOTTO:
                                 icon={createCustomIcon(labelText, isSelected)}
                                 eventHandlers={{
                                     click: () => handleMarkerClick(location),
@@ -140,82 +142,100 @@ export function MapView({
                     })}
             </MapContainer>
 
-            {/* 6. Information Banner (Overlay on top of map) */}
+            {/* Modal Detail Overlay for Clicked Location (Never cut off, easy to close, country styled) */}
             {selectedLocation && (
-                <div className="absolute bottom-4 left-4 right-4 z-[1000] animate-slide-up pointer-events-none">
-                    <div className="bg-white rounded-2xl shadow-2xl overflow-hidden max-w-2xl mx-auto pointer-events-auto">
+                <div
+                    className="absolute inset-0 z-[1500] bg-black/40 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200"
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget) closeBanner();
+                    }}
+                >
+                    <div className="relative bg-white dark:bg-gray-900 rounded-3xl shadow-2xl max-w-md w-full max-h-[92%] overflow-hidden flex flex-col border border-gray-100 dark:border-gray-800 animate-in zoom-in-95 duration-200">
+                        {/* Guaranteed visible Close Button */}
+                        <button
+                            type="button"
+                            onClick={closeBanner}
+                            className="absolute top-3 right-3 z-30 w-9 h-9 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-md flex items-center justify-center shadow-lg transition-transform hover:scale-105 active:scale-95"
+                            aria-label="Chiudi dettaglio"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+
+                        {/* Image Header */}
                         {selectedLocation.image && (
-                            <div className="relative h-48 bg-gray-200">
+                            <div className="relative h-44 sm:h-48 bg-slate-100 dark:bg-gray-800 flex-shrink-0">
                                 <img
                                     src={selectedLocation.image}
                                     alt={selectedLocation.title || selectedLocation.type}
                                     className="w-full h-full object-cover"
                                     onError={(e) => {
-                                        e.target.style.display = 'none';
+                                        handleImageFallback(e, selectedLocation.title, selectedLocation.location, localStorage.getItem('cultural_guide_country') || 'CH');
                                     }}
                                 />
-                                <button
-                                    onClick={closeBanner}
-                                    className="absolute top-3 right-3 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-100 transition-colors"
-                                >
-                                    <X className="w-5 h-5 text-gray-600" />
-                                </button>
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                                <div className="absolute bottom-3 left-4">
+                                    <span className="inline-block px-3 py-1 bg-white/95 dark:bg-gray-800/95 backdrop-blur-md rounded-full text-xs font-bold shadow-sm capitalize text-gray-800 dark:text-gray-200">
+                                        {selectedLocation.type || 'Punto Culturale'}
+                                    </span>
+                                </div>
                             </div>
                         )}
 
-                        <div className="p-6">
+                        {/* Scrollable Content */}
+                        <div className="p-5 sm:p-6 overflow-y-auto space-y-4">
                             {!selectedLocation.image && (
-                                <button
-                                    onClick={closeBanner}
-                                    className="absolute top-3 right-3 w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors"
-                                >
-                                    <X className="w-5 h-5 text-gray-600" />
-                                </button>
+                                <div className="inline-block px-3 py-1 rounded-full text-xs font-bold border mb-2 shadow-2xs" style={{ borderColor: themeColor, color: themeColor }}>
+                                    {selectedLocation.type || 'Punto Culturale'}
+                                </div>
                             )}
 
-                            <div className="inline-block px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm mb-3">
-                                {selectedLocation.type}
+                            <div>
+                                <h3 className="text-lg font-black text-gray-900 dark:text-white leading-snug">
+                                    {selectedLocation.title || selectedLocation.type}
+                                </h3>
+                                {selectedLocation.description && (
+                                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mt-2 leading-relaxed line-clamp-3">
+                                        {selectedLocation.description}
+                                    </p>
+                                )}
                             </div>
 
-                            <h2 className="text-gray-900 mb-3">
-                                {selectedLocation.title || selectedLocation.type}
-                            </h2>
-
-                            {selectedLocation.description && (
-                                <p className="text-gray-600 mb-4 line-clamp-2">{selectedLocation.description}</p>
-                            )}
-
-                            <div className="space-y-3">
-                                <div className="flex items-start gap-3">
-                                    <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center flex-shrink-0">
-                                        <MapPin className="w-5 h-5 text-indigo-600" />
+                            <div className="space-y-2.5 pt-2 text-xs border-t border-gray-100 dark:border-gray-800 text-gray-600 dark:text-gray-300">
+                                {selectedLocation.location && (
+                                    <div className="flex items-start gap-2.5">
+                                        <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: themeColor }} />
+                                        <span className="leading-snug">{selectedLocation.location}</span>
                                     </div>
-                                    <div className="flex-1">
-                                        <p className="text-gray-900 text-sm">{t('swipeCarousel_location')}</p>
-                                        <p className="text-gray-600 text-sm truncate">{selectedLocation.location}</p>
-                                    </div>
-                                </div>
+                                )}
 
                                 {selectedLocation.openingHours && (
-                                    <div className="flex items-start gap-3">
-                                        <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center flex-shrink-0">
-                                            <Clock className="w-5 h-5 text-indigo-600" />
-                                        </div>
-                                        <div className="flex-1">
-                                            <p className="text-gray-900 text-sm">{t('swipeCarousel_hours')}</p>
-                                            <p className="text-gray-600 text-sm">{selectedLocation.openingHours}</p>
-                                        </div>
+                                    <div className="flex items-start gap-2.5">
+                                        <Clock className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: themeColor }} />
+                                        <span>{selectedLocation.openingHours}</span>
                                     </div>
                                 )}
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3 mt-6">
-                                <button className="px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2">
-                                    <Navigation className="w-4 h-4" />
-                                    Directions
-                                </button>
-                                <button className="px-4 py-3 border-2 border-indigo-600 text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors">
-                                    More Info
+                            {/* Buttons */}
+                            <div className="pt-2 grid grid-cols-2 gap-2.5">
+                                <a
+                                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                                        `${selectedLocation.title || ''} ${selectedLocation.location || ''}`
+                                    )}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={`w-full py-2.5 px-3 rounded-xl text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all ${themeBgClass}`}
+                                >
+                                    <Navigation className="w-3.5 h-3.5" />
+                                    <span>{t('carousel_directions', 'Indicazioni')}</span>
+                                </a>
+
+                                <button
+                                    type="button"
+                                    onClick={closeBanner}
+                                    className="w-full py-2.5 px-3 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 font-bold text-xs hover:bg-gray-50 dark:hover:bg-gray-800 transition-all flex items-center justify-center gap-1.5"
+                                >
+                                    <span>{t('carousel_close', 'Chiudi')}</span>
                                 </button>
                             </div>
                         </div>
@@ -225,3 +245,5 @@ export function MapView({
         </div>
     );
 }
+
+export default MapView;

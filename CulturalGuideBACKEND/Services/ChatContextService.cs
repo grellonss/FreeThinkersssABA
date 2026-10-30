@@ -44,10 +44,14 @@ namespace CulturalGuideBACKEND.Services
 
             var categoriesMapped = CategoryMapper.MapMany(selectedCategoriesInput).ToList();
 
-            _logger.LogInformation("Building Swiss chat context for user {UserId} in city {City} with language {Language}.",
-                userId, cleanCity, langCode);
+            var isIt = SwaggerEppoiApiService.IsItalianDestination(cleanCity, userPreference?.Country);
+            var countryName = isIt ? "Italia" : "Svizzera";
+            var esnPartner = isIt ? "ESN Camerino (Italia)" : "ESN Olten (Svizzera)";
 
-            // Fetch Swiss POI details for this city
+            _logger.LogInformation("Building chat context for user {UserId} in city {City} ({Country}, partner {Partner}) with language {Language}.",
+                userId, cleanCity, countryName, esnPartner, langCode);
+
+            // Fetch POI details for this city
             var query = _db.CardItemDetails.Where(c => c.Municipality == cleanCity);
 
             if (categoriesMapped.Any())
@@ -58,7 +62,8 @@ namespace CulturalGuideBACKEND.Services
             var categoryCards = await query.Take(15).ToListAsync();
 
             var sb = new StringBuilder();
-            sb.AppendLine($"Swiss Destination: {cleanCity}, Switzerland");
+            sb.AppendLine($"Destination: {cleanCity}, {countryName}");
+            sb.AppendLine($"Partner Organization: {esnPartner}");
             if (userPreference != null)
             {
                 sb.AppendLine($"User Travel Window: {userPreference.StartTime:yyyy-MM-dd HH:mm} to {userPreference.EndTime:yyyy-MM-dd HH:mm}");
@@ -69,7 +74,7 @@ namespace CulturalGuideBACKEND.Services
                 sb.AppendLine("\nAvailable cultural attractions, sights, and places:");
                 foreach (var card in categoryCards)
                 {
-                    sb.AppendLine($"- Title: {card.Title ?? "Attrazione Svizzera"}");
+                    sb.AppendLine($"- Title: {card.Title ?? "Attrazione Culturale"}");
                     sb.AppendLine($"  Category: {card.Category}");
                     sb.AppendLine($"  Address: {card.Address}");
                     if (!string.IsNullOrWhiteSpace(card.Description))
@@ -85,7 +90,14 @@ namespace CulturalGuideBACKEND.Services
             }
             else
             {
-                sb.AppendLine($"General Highlights for {cleanCity}: museums, historic monuments, Swiss gastronomy (grotti & fondue), lake promenade, alpine panoramic trails.");
+                if (isIt)
+                {
+                    sb.AppendLine($"General Highlights for {cleanCity}: monumenti storici, borghi marchigiani, gastronomia tipica (ciauscolo, vincisgrassi, tartufo), sentieri dei Monti Sibillini e vita universitaria UNICAM.");
+                }
+                else
+                {
+                    sb.AppendLine($"General Highlights for {cleanCity}: musei e monumenti storici elvetici, gastronomia svizzera (grotti & fondue), lungolago e fiumi, percorsi panoramici alpini e campus FHNW.");
+                }
             }
 
             return sb.ToString();

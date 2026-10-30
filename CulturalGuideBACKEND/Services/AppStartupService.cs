@@ -44,13 +44,13 @@ namespace CulturalGuideBACKEND.Services
                 await swissService.GetMunicipalitiesIntoDbAsync();
 
                 // 2. Warm up categories
-                var categories = await swissService.GetCategoriesAsync("Lugano", "it");
-                _logger.LogInformation($">>> Swiss categories verified: {categories.Count()} categories loaded.");
+                var categories = await swissService.GetCategoriesAsync("Olten", "it");
+                _logger.LogInformation($">>> Categories verified: {categories.Count()} categories loaded.");
 
-                // 3. Preload cultural cards for top Swiss destinations
-                string[] startupCities = { "Lugano", "Zürich", "Bern" };
-                string[] startupCategories = { "artculture", "nature", "eatanddrink", "routes" };
-                string[] languages = { "it", "de", "en" };
+                // 3. Preload cultural cards for partner destinations (ESN Olten CH & ESN Camerino IT)
+                string[] startupCities = { "Olten", "Camerino", "Lugano", "Massignano" };
+                string[] startupCategories = { "artculture", "nature", "eatanddrink", "typicalproducts" };
+                string[] languages = { "it", "en" };
 
                 foreach (var city in startupCities)
                 {
@@ -67,7 +67,7 @@ namespace CulturalGuideBACKEND.Services
                     }
                 }
 
-                _logger.LogInformation(">>> Swiss Cultural Guide startup warmup completed successfully!");
+                _logger.LogInformation(">>> Cultural Guide (Switzerland 🇨🇭 & Italy 🇮🇹) startup warmup completed successfully!");
             }
             catch (Exception ex)
             {

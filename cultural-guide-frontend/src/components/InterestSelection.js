@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import defaultImage from '../images/ImageWithFallback.jpg';
+import { handleImageFallback } from '../services/imageResolver';
 import { formatDate } from '../utils/formatDate';
 import { useTranslation } from "react-i18next";
 import { LoadingSpinner } from "./ui_components/Loading";
@@ -569,8 +569,7 @@ export function InterestSelection({ user, onBack, onComplete }) {
                                                 alt={interest.title}
                                                 className="h-full w-full object-cover transition-transform hover:scale-105"
                                                 onError={(e) => {
-                                                    e.target.onerror = null;
-                                                    e.target.src = defaultImage;
+                                                    handleImageFallback(e, interest.title, user?.municipality || "Olten", localStorage.getItem("cultural_guide_country") || "CH");
                                                 }}
                                             />
                                         </div>
