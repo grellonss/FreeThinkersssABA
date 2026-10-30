@@ -1,0 +1,17 @@
+`# Cartelle di build
+bin/
+obj/
+
+# Database SQLite
+*.db
+*.db-shm
+*.db-wal
+
+# File IDE (Rider, VS, VS Code)
+.idea/
+.vs/
+*.user
+*.suo
+
+# Node modules (per il frontend)
+node_modules/`
