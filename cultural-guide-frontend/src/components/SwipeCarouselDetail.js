@@ -2,8 +2,8 @@ import React, {useState, useEffect} from 'react';
 import { X, MapPin, Clock, Phone, Globe, Mail, Calendar, Info, Euro, Facebook, Instagram } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import defaultImage from '../images/ImageWithFallback.jpg';
-import {toast} from "sonner";
 import { LoadingSpinner } from './ui_components/Loading';
+
 import { fetchEatAndDrinkDetail } from '../services/EatAndDrinksService';
 
 
@@ -34,7 +34,9 @@ export function SwipeCarouselDetail({ item, onClose }) {
         };
 
         loadDetails();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [item.id, i18n.language]);
+
 
     if (!item) return null;
 

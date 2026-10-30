@@ -39,8 +39,22 @@ export function Start({ onNavigate }) {
     return (
         <div className="min-h-screen p-4 md:p-8">
             <div className="max-w-6xl mx-auto">
+                {/* Swiss Hero Banner */}
+                <div className="text-center mb-10 pt-4">
+                    <div className="inline-flex items-center gap-2 px-3.5 py-1 bg-red-100 border border-red-200 text-red-700 rounded-full text-xs font-bold uppercase tracking-wider mb-3 shadow-sm">
+                        <span>🇨🇭</span> {t("start_hero_tag")}
+                    </div>
+                    <h1 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tight">
+                        {t("start_hero_title")}
+                    </h1>
+                    <p className="text-gray-600 mt-3 max-w-2xl mx-auto text-base md:text-lg">
+                        {t("start_hero_subtitle")}
+                    </p>
+                </div>
+
                 {/* Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
                     {menuItems.map((item) => {
                         const Icon = item.icon;
 

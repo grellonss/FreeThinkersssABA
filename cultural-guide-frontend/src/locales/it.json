@@ -1,6 +1,9 @@
 {
   "header_welcome": "Benvenuto",
-  "header_title": "Guida Culturale",
+  "header_title": "Guida Culturale Svizzera",
+  "start_hero_tag": "Confederatio Helvetica",
+  "start_hero_title": "Esplora la Cultura e il Fascino Svizzero",
+  "start_hero_subtitle": "Monumenti storici, castelli UNESCO, vette alpine e tradizioni enogastronomiche dei 26 cantoni elvetici.",
 
   "login_title": "Bentornato",
   "login_subtitle": "Accedi al tuo account",
@@ -68,8 +71,8 @@
   "menuItems_chatbot_description": "Chatta con il nostro assistente AI",
   "menuItems_preferences_title": "Impostazioni categorie",
   "menuItems_preferences_description": "Personalizza le tue preferenze",
-  "menuItems_recommendations_title": "Raccomandazioni della città",
-  "menuItems_recommendations_description": "Scopri la tua prossima destinazione",
+  "menuItems_recommendations_title": "Raccomandazioni Elvetiche",
+  "menuItems_recommendations_description": "Scopri attrazioni, musei, vette alpine e grotti della Svizzera",
   
   "passwordRecovery_email": "Indirizzo email",
   "passwordRecovery_emailSent": "Email inviata",
@@ -83,7 +86,7 @@
   "passwordRecovery_emailPlaceholder": "nome@esempio.it",
 
   "email_registration_salutation": "Ciao",
-  "email_registration_subject": "Grazie per esserti registrato a Guida Culturale!",
+  "email_registration_subject": "Grazie per esserti registrato a Guida Culturale Svizzera!",
   "email_registration_link": "Per favore, clicca sul seguente link per verificare il tuo indirizzo email:",
   "email_registration_verifyMail": "Verifica Email",
   "email_registration_ignoreMessage": "Se non ti sei registrato, ignora questa email.",
@@ -93,16 +96,17 @@
   "email_passwordRecovery_link": "Reimposta parola d'accesso",
   "email_passwordRecovery_ignoreMessage": "Se non hai fatto questa richiesta, puoi ignorare questo messaggio.",
 
-  "citySelection_chooseCity": "Seleziona la tua città",
-  "citySelection_searchACitySubtitle": "Cerca una città o seleziona dalla lista",
-  "citySelection_searchACityTitle": "Cerca città",
-  "citySelection_Lens": "Inserisci città...",
-  "citySelection_noCitiesFound": "Nessuna città trovata",
-  "citySelection_selectFromList": "Seleziona una città dalla lista",
-  "citySelection_dropDownMenu": "Seleziona una città",
-  "citySelection_selectCity": "Città selezionata:",
+  "citySelection_chooseCity": "Scegli la tua destinazione svizzera",
+  "citySelection_searchACitySubtitle": "Cerca qualsiasi comune dei 26 cantoni elvetici o seleziona dalla lista",
+  "citySelection_searchACityTitle": "Cerca comune svizzero",
+  "citySelection_Lens": "Inserisci comune svizzero (es. Lugano, Zurigo, Berna, Zermatt...)",
+  "citySelection_noCitiesFound": "Nessun comune svizzero trovato",
+  "citySelection_selectFromList": "Destinazioni svizzere in evidenza",
+  "citySelection_dropDownMenu": "Seleziona una destinazione svizzera",
+  "citySelection_selectCity": "Destinazione selezionata:",
   "citySelection_Continue": "Continua",
   "citySelection_goBack": "Indietro",
+
 
   "swipeCarousel_viewDetails": "Vedi Dettagli",
   "swipeCarousel_loadingMap": "Caricamento Mappa...",

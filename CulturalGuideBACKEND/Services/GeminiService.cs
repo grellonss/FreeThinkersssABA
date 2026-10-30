@@ -37,8 +37,20 @@ namespace CulturalGuideBACKEND.Services
             {
                 if (string.IsNullOrWhiteSpace(_apiKey) || _apiKey == "NEVER-PUSH-TO-GIT" || _apiKey.Contains("YOUR_"))
                 {
-                    _logger.LogWarning("Gemini API key is not configured in appsettings.json. Returning context-aware response.");
-                    return $"[Gemini Assistant for {municipality}]: Currently running in local mode. You can ask about points of interest, events, and restaurants in {municipality}!";
+                    _logger.LogWarning("Gemini API key is not configured in appsettings.json. Returning context-aware Swiss response.");
+                    var isDe = language?.StartsWith("de", StringComparison.OrdinalIgnoreCase) ?? false;
+                    var isEn = language?.StartsWith("en", StringComparison.OrdinalIgnoreCase) ?? false;
+
+                    if (isDe)
+                    {
+                        return $"[Schweizer Kulturführer für {municipality}]: Willkommen in {municipality}! Basierend auf Ihren Vorlieben empfehle ich den Besuch der historischen Altstadt, der Panoramawanderwege und der lokalen Gastronomie.\n{context}";
+                    }
+                    if (isEn)
+                    {
+                        return $"[Swiss Cultural Guide for {municipality}]: Welcome to {municipality}! Based on your interests, I recommend exploring the historic cultural heritage, scenic alpine panoramas, and traditional gastronomy.\n{context}";
+                    }
+
+                    return $"[Guida Culturale Svizzera per {municipality}]: Benvenuto a {municipality}! In base ai tuoi interessi e all'inventario culturale svizzero, ti consiglio di esplorare i monumenti storici, la magnifica vista panoramica e i sapori tipici della regione.\n{context}";
                 }
 
                 var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={_apiKey}";

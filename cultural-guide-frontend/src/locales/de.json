@@ -1,6 +1,9 @@
 {
   "header_welcome": "Willkommen",
-  "header_title": "Kulturführer",
+  "header_title": "Schweizer Kulturführer",
+  "start_hero_tag": "Confederatio Helvetica",
+  "start_hero_title": "Entdecken Sie Schweizer Kultur & Traditionen",
+  "start_hero_subtitle": "Historische Denkmäler, UNESCO-Burgen, Alpengipfel und kulinarische Spezialitäten aller 26 Schweizer Kantone.",
   
   "login_title": "Willkommen zurück",
   "login_subtitle": "Melden Sie sich bei Ihrem Konto an",
@@ -68,8 +71,8 @@
   "menuItems_chatbot_description": "Chatten Sie mit unserem KI-Assistenten",
   "menuItems_preferences_title": "Kategorie-Einstellungen",
   "menuItems_preferences_description": "Passen Sie Ihre Präferenzen an",
-  "menuItems_recommendations_title": "Stadt-Empfehlungen",
-  "menuItems_recommendations_description": "Entdecken Sie Ihre nächste Destination",
+  "menuItems_recommendations_title": "Schweizer Empfehlungen",
+  "menuItems_recommendations_description": "Entdecken Sie Schweizer Sehenswürdigkeiten, Museen, Alpengipfel und Grotti",
   
   "passwordRecovery_email": "E-Mail Adresse",
   "passwordRecovery_emailSent": "E-Mail gesendet",
@@ -83,7 +86,7 @@
   "passwordRecovery_emailPlaceholder": "name@beispiel.de",
   
   "email_registration_salutation": "Hallo",
-  "email_registration_subject": "Vielen Dank für Ihre Registrierung beim Kulturführer!",
+  "email_registration_subject": "Vielen Dank für Ihre Registrierung beim Schweizer Kulturführer!",
   "email_registration_link": "Bitte klicken Sie auf den folgenden Link, um Ihre E-Mail-Adresse zu verifizieren:",
   "email_registration_verifyMail": "E-Mail verifizieren",
   "email_registration_ignoreMessage": "Wenn Sie sich nicht registriert haben, ignorieren Sie diese E-Mail.",
@@ -93,16 +96,17 @@
   "email_passwordRecovery_link": "Passwort zurücksetzen",
   "email_passwordRecovery_ignoreMessage": "Wenn Sie diese Anfrage nicht gestellt haben, können Sie diese Nachricht ignorieren.",
   
-  "citySelection_chooseCity": "Wählen Sie Ihre Stadt",
-  "citySelection_searchACitySubtitle": "Suchen Sie nach einer Stadt oder wählen Sie aus der Liste",
-  "citySelection_searchACityTitle": "Stadt suchen",
-  "citySelection_Lens": "Stadt eingeben...",
-  "citySelection_noCitiesFound": "Keine Städte gefunden",
-  "citySelection_selectFromList": "Oder wählen Sie aus der Liste",
-  "citySelection_dropDownMenu": "Bitte wählen Sie eine Stadt",
-  "citySelection_selectCity": "Ausgewählte Stadt:",
+  "citySelection_chooseCity": "Wählen Sie Ihr Schweizer Reiseziel",
+  "citySelection_searchACitySubtitle": "Suchen Sie jede Schweizer Gemeinde aller 26 Kantone oder wählen Sie aus der Liste",
+  "citySelection_searchACityTitle": "Schweizer Gemeinde suchen",
+  "citySelection_Lens": "Schweizer Gemeinde eingeben (z. B. Zürich, Bern, Lugano, Zermatt...)",
+  "citySelection_noCitiesFound": "Keine Schweizer Gemeinde gefunden",
+  "citySelection_selectFromList": "Beliebte Schweizer Reiseziele",
+  "citySelection_dropDownMenu": "Schweizer Reiseziel auswählen",
+  "citySelection_selectCity": "Ausgewähltes Reiseziel:",
   "citySelection_Continue": "Weiter",
   "citySelection_goBack": "Zurück",
+
 
   "swipeCarousel_viewDetails": "Details ansehen",
   "swipeCarousel_loadingMap": "Karte wird geladen...",

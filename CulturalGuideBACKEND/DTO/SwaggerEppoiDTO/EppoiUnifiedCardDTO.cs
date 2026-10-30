@@ -11,10 +11,14 @@ namespace CulturalGuideBACKEND.DTO.SwaggerEppoiDTO
 
         public string? Classification { get; set; }
         public string? Date { get; set; }
+        public string? Description { get; set; }
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
 
-        public EppoiMunicipalitiesDTO MunicipalityData { get; set; }
+        public EppoiMunicipalitiesDTO? MunicipalityData { get; set; }
 
-        public string Language { get; set; }
-        public string Municipality { get; set; }
+        public string Language { get; set; } = string.Empty;
+        public string Municipality { get; set; } = string.Empty;
     }
 }
+

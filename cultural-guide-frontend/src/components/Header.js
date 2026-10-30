@@ -36,19 +36,25 @@ export function Header({ navigateToStart, navigateToLogin }) {
             <div className="max-w-6xl mx-auto grid grid-cols-3 items-center p-4">
 
                 {/* LEFT COLUMN - LOGO */}
-                <div className="flex items-center">
+                <div className="flex items-center gap-2">
                     <button
                         onClick={onLogoClick}
-                        className="text-xl font-bold text-indigo-600 hover:text-indigo-800 transition-colors"
+                        className="text-xl font-extrabold text-red-600 hover:text-red-700 transition-colors flex items-center gap-2"
                     >
-                        {t("header_title")}
+                        <span className="w-7 h-7 bg-red-600 text-white rounded-lg flex items-center justify-center text-sm shadow-sm font-black">
+                            +
+                        </span>
+                        <span>{t("header_title")}</span>
                     </button>
                 </div>
 
-                {/* CENTER COLUMN (EMPTY OR YOU CAN ADD CONTENT) */}
-                <div className="text-center font-medium text-gray-500">
-                    {t("header_welcome")}
+                {/* CENTER COLUMN */}
+                <div className="text-center font-semibold text-gray-600 hidden sm:block">
+                    <span className="px-3 py-1 bg-red-50 text-red-700 rounded-full text-xs font-bold uppercase tracking-wider">
+                        🇨🇭 Swiss Heritage & Tourism
+                    </span>
                 </div>
+
 
                 {/* RIGHT COLUMN - LANGUAGE SELECTOR */}
                 <div className="flex justify-end">

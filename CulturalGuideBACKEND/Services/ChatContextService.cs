@@ -1,10 +1,12 @@
 // Services/ChatContextService.cs
+using System;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using CulturalGuideBACKEND.Data;
 using CulturalGuideBACKEND.Services;
+using CulturalGuideBACKEND.Services.SwaggerEppoiService;
 
 namespace CulturalGuideBACKEND.Services
 {
@@ -16,91 +18,77 @@ namespace CulturalGuideBACKEND.Services
     public class ChatContextService : IChatContextService
     {
         private readonly AppDbContext _db;
-	    private readonly ILogger<ChatContextService> _logger;
-		
+        private readonly ILogger<ChatContextService> _logger;
+
         public ChatContextService(AppDbContext db, ILogger<ChatContextService> logger)
         {
-    		_logger = logger;
-	        _db = db;
+            _logger = logger;
+            _db = db;
         }
 
         public async Task<string> BuildContextAsync(string municipality, string userId, string language)
         {
-
-			// ---------------------
-			// 1: Get all SelectedCategories from the user's preferences from ProfileVector
-			// ---------------------
+            var cleanCity = SwaggerEppoiApiService.CleanMunicipality(municipality);
+            var langCode = language?.ToLowerInvariant().StartsWith("de") == true ? "de"
+                : language?.ToLowerInvariant().StartsWith("en") == true ? "en" : "it";
 
             // Get user preferences
-			var userPreference = await _db.ProfileVector.FirstOrDefaultAsync(p => p.UserId == userId);
+            var userPreference = await _db.ProfileVector.FirstOrDefaultAsync(p => p.UserId == userId);
 
-			//if (userPreference != null)
-            //{
-            //    context += $"User interests: {userPreference.SelectedCategories}\n";
-            //    context += $"Travel dates: {userPreference.StartTime:yyyy-MM-dd} to {userPreference.EndTime:yyyy-MM-dd}\n";
-            //}
-
-            // Convert the stored string into an IEnumerable<string> (split on commas/semicolons), handle nulls
             var selectedCategoriesInput = userPreference?.SelectedCategories != null
                 ? userPreference.SelectedCategories
-                    .Split(new[] { ',', ';' }, System.StringSplitOptions.RemoveEmptyEntries)
+                    .Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
                     .Select(s => s.Trim().Trim('"', '[', ']', '\''))
                     .Where(s => !string.IsNullOrWhiteSpace(s))
                 : Enumerable.Empty<string>();
 
+            var categoriesMapped = CategoryMapper.MapMany(selectedCategoriesInput).ToList();
 
-			// map userPreference.SelectedCategories to CardItemDetails.Category (eatanddrink -> eat-and-drink)
-			var categoriesMapped = CategoryMapper.MapMany(selectedCategoriesInput).ToList(); // IEnumerable<string> -> List<string>
+            _logger.LogInformation("Building Swiss chat context for user {UserId} in city {City} with language {Language}.",
+                userId, cleanCity, langCode);
 
-			categoriesMapped.ForEach(c => 
-                _logger.LogInformation($"Mapped user category to selectedCategory: {c}"));
+            // Fetch Swiss POI details for this city
+            var query = _db.CardItemDetails.Where(c => c.Municipality == cleanCity);
 
-            // Get top cards for the municipality
-            //var topCards = await _db.CardItems
-            //    .Where(c => c.Municipality == municipality.Substring(10))
-            //    .Take(10)
-            //    .Select(c => new { c.EntityName, c.BadgeText, c.Address })
-            //    .ToListAsync();
+            if (categoriesMapped.Any())
+            {
+                query = query.Where(c => categoriesMapped.Contains(c.Category) || c.Category == null);
+            }
 
-			_logger.LogInformation($"Building chat context for user {userId} in municipality {municipality.Substring(10)} with language {language}.");
+            var categoryCards = await query.Take(15).ToListAsync();
 
-			// Get CardItemDetails by categories from ProfileVector
-			var categoryCards = await _db.CardItemDetails
-				.Where(c => c.Municipality == municipality.Substring(10)
-				&& categoriesMapped.Contains(c.Category) 
-				&& c.Language == language)
-				.ToListAsync();
-			
-			_logger.LogInformation($"Found {categoryCards.Count()} cards for municipality {municipality.Substring(10)}.");
-			categoryCards.ForEach(c => 
-                _logger.LogInformation($"Card collected to send to GEMINI: {c.Id}, Category: {c.Category})"));
-			
-			// context list with all card details
-            var context = string.Empty;
-            
-            
+            var sb = new StringBuilder();
+            sb.AppendLine($"Swiss Destination: {cleanCity}, Switzerland");
+            if (userPreference != null)
+            {
+                sb.AppendLine($"User Travel Window: {userPreference.StartTime:yyyy-MM-dd HH:mm} to {userPreference.EndTime:yyyy-MM-dd HH:mm}");
+            }
 
             if (categoryCards.Any())
             {
-                context += "\nAvailable places:\n";
-                foreach (var cardDetail in categoryCards)
+                sb.AppendLine("\nAvailable cultural attractions, sights, and places:");
+                foreach (var card in categoryCards)
                 {
-                    context += new StringBuilder()
-                        .AppendLine($"- Name: {cardDetail.Id}")
-                        .AppendLine($"  Category: {cardDetail.Category}")
-                        .AppendLine($"  Municipality: {cardDetail.Municipality}")
-                        .AppendLine($"  Address: {cardDetail.Address}")
-                        .AppendLine($"  Description: {cardDetail.Description}")
-                        .AppendLine($"  Language: {cardDetail.Language}")
-                        .AppendLine($"  Longitude: {cardDetail.Longitude}")
-                        .AppendLine($"  Latitude: {cardDetail.Latitude}");
+                    sb.AppendLine($"- Title: {card.Title ?? "Attrazione Svizzera"}");
+                    sb.AppendLine($"  Category: {card.Category}");
+                    sb.AppendLine($"  Address: {card.Address}");
+                    if (!string.IsNullOrWhiteSpace(card.Description))
+                    {
+                        var shortDesc = card.Description.Length > 200 ? card.Description.Substring(0, 200) + "..." : card.Description;
+                        sb.AppendLine($"  Description: {shortDesc}");
+                    }
+                    if (card.Latitude.HasValue && card.Longitude.HasValue)
+                    {
+                        sb.AppendLine($"  Coordinates: Lat {card.Latitude:F4}, Lon {card.Longitude:F4}");
+                    }
                 }
             }
+            else
+            {
+                sb.AppendLine($"General Highlights for {cleanCity}: museums, historic monuments, Swiss gastronomy (grotti & fondue), lake promenade, alpine panoramic trails.");
+            }
 
-			_logger.LogInformation("Chat context built successfully with the following context:");
-			_logger.LogInformation(context);
-
-            return context;
+            return sb.ToString();
         }
     }
 }

@@ -6,7 +6,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using CulturalGuideBACKEND.Services.SwaggerEppoiService;
-using CulturalGuideBACKEND.DTO.SwaggerEppoiDTO;
 
 namespace CulturalGuideBACKEND.Services
 {
@@ -23,7 +22,7 @@ namespace CulturalGuideBACKEND.Services
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            _logger.LogInformation(">>> App startup service starting in background...");
+            _logger.LogInformation(">>> Swiss Cultural Guide startup warmup starting in background...");
 
             _ = Task.Run(async () =>
             {
@@ -35,105 +34,49 @@ namespace CulturalGuideBACKEND.Services
 
         private async Task RunWarmupAsync()
         {
-
             try
             {
-                // Create scope because ISwaggerEppoiApiService is scoped
                 using var scope = _services.CreateScope();
+                var swissService = scope.ServiceProvider.GetRequiredService<ISwaggerEppoiApiService>();
 
-                string municipality = "Massignano";
-                string language = "it";
+                // 1. Seed Swiss municipalities
+                _logger.LogInformation(">>> Seeding Swiss municipalities into database...");
+                await swissService.GetMunicipalitiesIntoDbAsync();
 
-                var eppoiService = scope.ServiceProvider.GetRequiredService<ISwaggerEppoiApiService>();
+                // 2. Warm up categories
+                var categories = await swissService.GetCategoriesAsync("Lugano", "it");
+                _logger.LogInformation($">>> Swiss categories verified: {categories.Count()} categories loaded.");
 
-                _logger.LogInformation(">>> Calling GetCategoriesAsync on startup...");
+                // 3. Preload cultural cards for top Swiss destinations
+                string[] startupCities = { "Lugano", "Zürich", "Bern" };
+                string[] startupCategories = { "artculture", "nature", "eatanddrink", "routes" };
+                string[] languages = { "it", "de", "en" };
 
-                var categories = await eppoiService.GetCategoriesAsync(municipality, language);
-
-                _logger.LogInformation($">>> Categories received: {categories.Count()}");
-
-                foreach (var c in categories)
+                foreach (var city in startupCities)
                 {
-                    _logger.LogInformation($" - Category: {c.Category}, Label: {c.Label}, ImagePath: {c.ImagePath}");
+                    foreach (var cat in startupCategories)
+                    {
+                        try
+                        {
+                            await swissService.GetCategoryCardsAsync(cat, city, "it");
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(ex, "Warmup error for {City}/{Category}", city, cat);
+                        }
+                    }
                 }
+
+                _logger.LogInformation(">>> Swiss Cultural Guide startup warmup completed successfully!");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, ">>> Error calling GetCategoriesAsync on startup");
-            }
-
-            // ---------------------
-            // invoke GetMunicipalitiesAsync at every startup to warm up the db
-            // ---------------------
-            try
-            {
-                using var scope = _services.CreateScope();
-                var eppoiService = scope.ServiceProvider.GetRequiredService<ISwaggerEppoiApiService>();
-                await eppoiService.GetMunicipalitiesIntoDbAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, ">>> Error calling GetMunicipalitiesAsync on startup");
-            }
-
-            _logger.LogInformation(">>> Startup service finished.");
-            
-            // ---------------------
-            // invoke GetAllCards at every startup to provide content to the db for the chatbot
-            // ---------------------
-            try
-            {
-                using var scope = _services.CreateScope();
-                var eppoiService = scope.ServiceProvider.GetRequiredService<ISwaggerEppoiApiService>();
-
-                // endpoints used in app
-                string[] endpoints = new string[]
-                {
-                    "art-culture",
-                    "articles",
-                    "eat-and-drink",
-                    "entertainment-leisure",
-                    "events",
-                    "nature",
-                    "organizations",
-                    "routes",
-                    "services",
-                    "shopping",
-                    "sleep",
-                    "typical-products"
-                };
-
-                // languages used in app
-                string[] languages = new string[] { "it", "en", "de" };
-                
-                // municipalities used in app
-                var allMunicipalities = await eppoiService.GetMunicipalitiesAsync();
-                string[] municipalities = allMunicipalities
-                    .Select(m => {
-                        var name = m?.LegalName ?? string.Empty;
-                        if (name.StartsWith("Comune di ", StringComparison.OrdinalIgnoreCase))
-                            return name.Substring("Comune di ".Length).Trim();
-                        if (name.StartsWith("Commune di ", StringComparison.OrdinalIgnoreCase))
-                            return name.Substring("Commune di ".Length).Trim();
-                        return name.Trim();
-                    })
-                    .Where(name => !string.IsNullOrWhiteSpace(name))
-                    .ToArray();
-
-                if (municipalities.Length > 0)
-                {
-                    await eppoiService.GetCardsAsync(municipalities, languages, endpoints);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, ">>> Error calling GetCardsAsync on startup");
+                _logger.LogError(ex, ">>> Error during Swiss Cultural Guide startup warmup");
             }
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
-            // Nothing to clean up
             return Task.CompletedTask;
         }
     }

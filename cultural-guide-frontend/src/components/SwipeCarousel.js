@@ -51,8 +51,10 @@ const PrevArrow = ({ onClick }) => (
 export function SwipeCarousel({ onViewDetails, onBack, municipality, user, onNavigateToPreferences }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    // eslint-disable-next-line no-unused-vars
     const [currentSlide, setCurrentSlide] = useState(0);
     const { t, i18n } = useTranslation();
+
 
     // Detail view state
     const [selectedItem, setSelectedItem] = useState(null);
@@ -71,9 +73,10 @@ export function SwipeCarousel({ onViewDetails, onBack, municipality, user, onNav
     // Remove filter state
     const [showAllCategories, setShowAllCategories] = useState(false);
 
-    // Locations for MapView
-    const [centerLatitude, setCenterLatitude] = useState();
-    const [centerLongitude, setCenterLongitude] = useState();
+    // Locations for MapView (Default: Swiss center)
+    const [centerLatitude, setCenterLatitude] = useState(46.8182);
+    const [centerLongitude, setCenterLongitude] = useState(8.2275);
+
     
     const [markers, setMarkers] = useState([]);
     
@@ -187,7 +190,12 @@ export function SwipeCarousel({ onViewDetails, onBack, municipality, user, onNav
 
             try {
                 const language = i18n.language;
-                const municipalityToUse = profileVector.municipality.substring(10) || municipality.substring(10);
+                const rawMuni = (profileVector && profileVector.municipality) || municipality || "Lugano";
+                const municipalityToUse = rawMuni
+                    .replace(/^Com[m]?une\s+(di|de)\s+/i, '')
+                    .replace(/^Gemeinde\s+/i, '')
+                    .replace(/\s*\([A-Z]{2}\)$/, '')
+                    .trim() || rawMuni;
 
                 // Determine which categories to use - prioritize showAllCategories flag
                 let categoriesToFetch;
@@ -284,7 +292,9 @@ export function SwipeCarousel({ onViewDetails, onBack, municipality, user, onNav
 
         // IMPORTANT: Only depend on showAllCategories, NOT on profileVector
         // This prevents re-fetching when profileVector changes
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [showAllCategories, hasProfileVector, municipality, i18n.language, t]);
+
 
     // -----------------------------
     // Handle Remove/Restore Preferences Toggle
@@ -346,11 +356,12 @@ export function SwipeCarousel({ onViewDetails, onBack, municipality, user, onNav
             try {
                 setLoading(true);
                 const data = await fetchMap(selectedCity);
-                setMarkers(data.locations);
-                if (data.length > 0) {
+                setMarkers(data?.locations || []);
+                if (data?.center?.latitude != null && data?.center?.longitude != null) {
                     setCenterLatitude(data.center.latitude);
                     setCenterLongitude(data.center.longitude);
                 }
+
             } catch (err) {
                 setError(err.message);
             } finally {

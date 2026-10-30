@@ -38,8 +38,9 @@ export function MapView({
                             onLocationClick
                         }) {
     const [selectedLocation, setSelectedLocation] = useState(null);
-    const [mapCenter, setMapCenter] = useState([41.9028, 12.4964]); // Default to Rome or generic
+    const [mapCenter, setMapCenter] = useState([46.8182, 8.2275]); // Default to Switzerland
     const { t } = useTranslation();
+
 
     // Initialize center logic
     useEffect(() => {

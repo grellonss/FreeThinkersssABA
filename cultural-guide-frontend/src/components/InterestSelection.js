@@ -82,7 +82,7 @@ export function InterestSelection({ user, onBack }) {
     };
 
     // ========================================
-    // STEP 2: CITY SELECTION LOGIC
+    // STEP 2: SWISS MUNICIPALITY SELECTION LOGIC
     // ========================================
     useEffect(() => {
         if (currentStep === 2) {
@@ -91,30 +91,39 @@ export function InterestSelection({ user, onBack }) {
                 setError("");
 
                 try {
-                    const response = await fetch("http://localhost:5203/api/eppoiapi/municipalities", {
+                    const queryParam = searchTerm.trim() ? `?search=${encodeURIComponent(searchTerm.trim())}` : "";
+                    const response = await fetch(`http://localhost:5203/api/eppoiapi/municipalities${queryParam}`, {
                         method: "GET",
                         headers: { "Content-Type": "application/json" },
                         credentials: "include",
                     });
 
                     if (!response.ok) {
-                        setError(`Error fetching municipalities: ${response.status}`);
+                        setError(`Error fetching Swiss destinations: ${response.status}`);
                         return;
                     }
 
                     const data = await response.json().catch(() => []);
                     setMunicipalities(data);
 
+                    if (!selectedCity && data.length > 0) {
+                        setSelectedCity(data[0].legalName);
+                    }
                 } catch (err) {
                     console.error(err);
-                    setError("Network error while fetching municipalities");
+                    setError("Network error while fetching Swiss destinations");
                 } finally {
                     setLoading(false);
                 }
             };
-            fetchMunicipalities();
+
+            const timer = setTimeout(() => {
+                fetchMunicipalities();
+            }, searchTerm ? 300 : 0);
+
+            return () => clearTimeout(timer);
         }
-    }, [currentStep]);
+    }, [currentStep, searchTerm, selectedCity]);
 
     const filteredCities = municipalities.filter((m) =>
         (m.legalName ?? "").toLowerCase().includes((searchTerm ?? "").toLowerCase())
@@ -145,15 +154,18 @@ export function InterestSelection({ user, onBack }) {
                 setError("");
 
                 try {
-                    // ------------- Fetch categories based on selected city -------------
-                    // Trim first 10 characters from selectedCity ("Commune di ")
-                    let selectedCityTrim = selectedCity.substring(10, selectedCity.length);
+                    const cleanCity = selectedCity
+                        .replace(/^Com[m]?une\s+(di|de)\s+/i, "")
+                        .replace(/^Gemeinde\s+/i, "")
+                        .replace(/\s*\([A-Z]{2}\)$/, "")
+                        .trim() || selectedCity;
+
                     const res = await fetch(
                         `http://localhost:5203/api/eppoiapi/categories?municipality=${encodeURIComponent(
-                            selectedCityTrim
+                            cleanCity
                         )}&language=${i18n.language}`
                     );
-                    
+
                     if (!res.ok) {
                         throw new Error(`HTTP ${res.status}`);
                     }
@@ -164,7 +176,7 @@ export function InterestSelection({ user, onBack }) {
                         id: cat.category.toLowerCase(),
                         title: cat.label,
                         image: cat.imagePath
-                            ? `http://localhost:5203/api/eppoiapi/proxy-image?imageUrl=${encodeURIComponent(cat.imagePath)}`
+                            ? (cat.imagePath.startsWith('http') ? cat.imagePath : `http://localhost:5203/api/eppoiapi/proxy-image?imageUrl=${encodeURIComponent(cat.imagePath)}`)
                             : defaultImage,
                         selected: false
                     })));
@@ -198,22 +210,25 @@ export function InterestSelection({ user, onBack }) {
             return;
         }
 
-        // Prepare data for backend with hours 0 0 0
         const start = new Date(startSelection.date);
         start.setHours(startSelection.hour, 0, 0, 0);
 
         const end = new Date(endSelection.date);
         end.setHours(endSelection.hour, 0, 0, 0);
 
+        const cleanCity = selectedCity
+            .replace(/^Com[m]?une\s+(di|de)\s+/i, "")
+            .replace(/^Gemeinde\s+/i, "")
+            .replace(/\s*\([A-Z]{2}\)$/, "")
+            .trim() || selectedCity;
+
         const preferenceData = {
-            userId: user.email,
-            municipality: selectedCity,
+            userId: user.email || user.id || "traveler@switzerland.ch",
+            municipality: cleanCity,
             startTime: start.toISOString(),
             endTime: end.toISOString(),
             selectedCategories: selectedIds
         };
-
-        console.log("Saving preferences from data retrieved:", preferenceData);
 
         try {
             setLoadingProfileVector(true);
@@ -232,9 +247,6 @@ export function InterestSelection({ user, onBack }) {
                 throw new Error(errorData.message || `HTTP ${response.status}`);
             }
 
-            const result = await response.json();
-            console.log("Preferences saved successfully:", result);
-
             toast.success(t("interestSelection_profileVectorSavedSuccessfully"));
 
             // Go back to start after successful save
@@ -244,15 +256,15 @@ export function InterestSelection({ user, onBack }) {
             console.error("Failed to save preferences:", err);
             toast.error(t("interestSelection_profileVectorError"));
         } finally {
-            setLoading(false);
+            setLoadingProfileVector(false);
         }
     };
-    
+
     const handleBack = () => {
         if (currentStep === 1) {
-            onBack(); // Go back to Start component
+            onBack();
         } else {
-            setCurrentStep(currentStep - 1); // Go to previous step
+            setCurrentStep(currentStep - 1);
         }
     };
 
@@ -265,27 +277,15 @@ export function InterestSelection({ user, onBack }) {
         endSelection.date && endSelection.hour !== null;
     const selectedCount = interests.filter(i => i.selected).length;
 
- 
-    // Map i18n language to locale
-    const localeMap = {
-        de: 'de-DE',
-        en: 'en-GB',
-        it: 'it-IT',
-    };
-
-
-    // ========================================
-    // STEP RENDERING
-    // ========================================
     return (
         <div className="min-h-screen p-4 md:p-8">
             <div className="max-w-4xl mx-auto">
                 {/* Back Button */}
                 <button
                     onClick={handleBack}
-                    className="mb-6 flex items-center gap-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition"
+                    className="mb-6 flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-100 text-gray-700 rounded-lg shadow-sm border border-gray-200 transition"
                 >
-                    <ChevronLeft className="w-5 h-5" />
+                    <ChevronLeft className="w-5 h-5 text-indigo-600" />
                     {t('interestSelection_goBack')}
                 </button>
 
@@ -296,20 +296,23 @@ export function InterestSelection({ user, onBack }) {
                             key={step}
                             className={`h-2 rounded-full transition-all ${
                                 step === currentStep
-                                    ? 'w-12 bg-indigo-600'
+                                    ? 'w-12 bg-red-600'
                                     : step < currentStep
-                                        ? 'w-8 bg-indigo-400'
+                                        ? 'w-8 bg-red-400'
                                         : 'w-8 bg-gray-300'
                             }`}
                         />
                     ))}
                 </div>
 
-                <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8">
+                <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 border border-gray-100">
                     {/* STEP 1: TIME AVAILABILITY */}
                     {currentStep === 1 && (
                         <>
-                            <h1 className="text-2xl font-bold mb-2">{t('timeAvailability_title')}</h1>
+                            <div className="flex items-center gap-3 mb-2">
+                                <span className="px-3 py-1 bg-red-100 text-red-700 font-bold rounded-full text-xs">Passo 1 / 3</span>
+                                <h1 className="text-2xl font-bold text-gray-900">{t('timeAvailability_title')}</h1>
+                            </div>
                             <p className="text-gray-600 mb-6">{t('timeAvailability_subtitle')}</p>
 
                             {/* Start / End Selector */}
@@ -318,10 +321,10 @@ export function InterestSelection({ user, onBack }) {
                                     <button
                                         key={type}
                                         onClick={() => setActiveCalendar(type)}
-                                        className={`p-4 rounded-xl border-2 ${
+                                        className={`p-4 rounded-xl border-2 transition-all ${
                                             activeCalendar === type
-                                                ? 'border-indigo-600 bg-indigo-50'
-                                                : 'border-gray-200'
+                                                ? 'border-red-600 bg-red-50 text-red-900 font-semibold'
+                                                : 'border-gray-200 hover:border-gray-300'
                                         }`}
                                     >
                                         <p className="font-medium">
@@ -336,17 +339,17 @@ export function InterestSelection({ user, onBack }) {
                             {/* Calendar */}
                             <div className="grid grid-cols-7 gap-2 mb-6">
                                 {t('timeAvailability_days', { returnObjects: true }).map(day => (
-                                    <div key={day} className="text-center text-sm text-gray-500">{day}</div>
+                                    <div key={day} className="text-center text-sm font-semibold text-gray-500">{day}</div>
                                 ))}
                                 {days.map((day, i) =>
                                     day ? (
                                         <button
                                             key={i}
                                             onClick={() => selectDate(day)}
-                                            className={`p-2 rounded-lg ${
+                                            className={`p-2 rounded-lg font-medium transition ${
                                                 currentSelection.date?.toDateString() === day.toDateString()
-                                                    ? 'bg-indigo-600 text-white'
-                                                    : 'hover:bg-gray-200'
+                                                    ? 'bg-red-600 text-white shadow-md'
+                                                    : 'hover:bg-red-50 text-gray-800'
                                             }`}
                                         >
                                             {day.getDate()}
@@ -362,10 +365,10 @@ export function InterestSelection({ user, onBack }) {
                                         key={hour}
                                         onClick={() => selectHour(hour)}
                                         disabled={!currentSelection.date}
-                                        className={`p-2 rounded-lg border text-[9px] sm:text-sm ${
+                                        className={`p-2 rounded-lg border text-[11px] sm:text-sm font-medium transition ${
                                             currentSelection.hour === hour
-                                                ? 'border-indigo-600 bg-indigo-50'
-                                                : 'border-gray-200 disabled:opacity-50'
+                                                ? 'border-red-600 bg-red-600 text-white'
+                                                : 'border-gray-200 hover:border-red-300 disabled:opacity-40'
                                         }`}
                                     >
                                         {hour.toString().padStart(2, '0')}:00
@@ -376,7 +379,7 @@ export function InterestSelection({ user, onBack }) {
                             <button
                                 onClick={handleTimeComplete}
                                 disabled={!isTimeComplete}
-                                className="w-full bg-indigo-600 text-white py-3 rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-indigo-700 transition"
+                                className="w-full bg-red-600 text-white py-3 rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red-700 transition font-semibold shadow-md"
                             >
                                 {t('timeAvailability_continue')}
                                 <ArrowRight className="w-5 h-5" />
@@ -384,12 +387,12 @@ export function InterestSelection({ user, onBack }) {
                         </>
                     )}
 
-                    {/* STEP 2: CITY SELECTION */}
+                    {/* STEP 2: SWISS CITY SELECTION */}
                     {currentStep === 2 && (
                         <>
                             <div className="text-center mb-8">
-                                <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-100 rounded-full mb-4">
-                                    <MapPin className="w-8 h-8 text-indigo-600" />
+                                <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-4 shadow-sm">
+                                    <MapPin className="w-8 h-8 text-red-600" />
                                 </div>
                                 <h1 className="text-3xl font-bold text-gray-900 mb-2">{t("citySelection_chooseCity")}</h1>
                                 <p className="text-gray-600">{t("citySelection_searchACitySubtitle")}</p>
@@ -411,23 +414,30 @@ export function InterestSelection({ user, onBack }) {
                                             setIsDropdownOpen(true);
                                         }}
                                         onFocus={() => setIsDropdownOpen(true)}
-                                        placeholder={t("citySelection_Lens")}
-                                        className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                        placeholder="Cerca qualsiasi comune svizzero (es. Lugano, Zürich, Bern, Zermatt...)"
+                                        className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900 shadow-sm"
                                     />
                                 </div>
 
                                 {/* Dropdown Results */}
                                 {isDropdownOpen && searchTerm && (
-                                    <div className="mt-2 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                    <div className="mt-2 bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-y-auto z-20">
                                         {filteredCities.length > 0 ? (
-                                            filteredCities.map((municipality) => (
+                                            filteredCities.map((muni) => (
                                                 <button
-                                                    key={municipality.legalName}
-                                                    onClick={() => handleMunicipalityClick(municipality.legalName)}
-                                                    className="w-full text-left px-4 py-3 hover:bg-indigo-50 transition-colors flex items-center gap-3"
+                                                    key={muni.legalName}
+                                                    onClick={() => handleMunicipalityClick(muni.legalName)}
+                                                    className="w-full text-left px-4 py-3 hover:bg-red-50 transition-colors flex items-center justify-between border-b last:border-b-0 border-gray-100"
                                                 >
-                                                    <MapPin className="w-5 h-5 text-indigo-600" />
-                                                    <span className="text-gray-900">{municipality.legalName}</span>
+                                                    <div className="flex items-center gap-3">
+                                                        <MapPin className="w-5 h-5 text-red-600 flex-shrink-0" />
+                                                        <span className="text-gray-900 font-medium">{muni.legalName}</span>
+                                                    </div>
+                                                    {muni.canton && (
+                                                        <span className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded text-xs font-semibold">
+                                                            {muni.canton}
+                                                        </span>
+                                                    )}
                                                 </button>
                                             ))
                                         ) : (
@@ -450,7 +460,7 @@ export function InterestSelection({ user, onBack }) {
                                         id="city-dropdown"
                                         value={selectedCity}
                                         onChange={(e) => setSelectedCity(e.target.value)}
-                                        className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none bg-white cursor-pointer text-gray-900"
+                                        className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent appearance-none bg-white cursor-pointer text-gray-900 font-medium shadow-sm"
                                     >
                                         <option value="" disabled hidden className="text-gray-400">
                                             {t("citySelection_dropDownMenu")}
@@ -466,12 +476,14 @@ export function InterestSelection({ user, onBack }) {
 
                             {/* Selected City Display */}
                             {selectedCity && (
-                                <div className="mb-6 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+                                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
                                     <div className="flex items-center gap-3">
-                                        <MapPin className="w-6 h-6 text-indigo-600" />
+                                        <div className="w-10 h-10 rounded-full bg-red-600 text-white flex items-center justify-center font-bold">
+                                            🇨🇭
+                                        </div>
                                         <div>
-                                            <p className="text-gray-600">{t("citySelection_selectCity")}</p>
-                                            <p className="font-semibold text-indigo-900">{selectedCity}</p>
+                                            <p className="text-gray-600 text-xs uppercase tracking-wider font-semibold">{t("citySelection_selectCity")}</p>
+                                            <p className="font-bold text-red-950 text-lg">{selectedCity}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -486,7 +498,7 @@ export function InterestSelection({ user, onBack }) {
                             <button
                                 onClick={handleCityComplete}
                                 disabled={!selectedCity}
-                                className="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold flex items-center justify-center gap-2"
+                                className="w-full bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold flex items-center justify-center gap-2 shadow-md"
                             >
                                 {t("citySelection_Continue")}
                                 <ArrowRight className="w-5 h-5" />
@@ -498,28 +510,32 @@ export function InterestSelection({ user, onBack }) {
                     {currentStep === 3 && (
                         <>
                             <div className="mb-8">
-                                <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <span className="px-3 py-1 bg-red-100 text-red-700 font-bold rounded-full text-xs">Passo 3 / 3</span>
+                                    <span className="text-sm font-semibold text-gray-500">🇨🇭 Svizzera</span>
+                                </div>
+                                <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
                                     {t("interestSelection_greetings")}, {user.name}!
                                 </h1>
-                                <p className="text-gray-600 mb-4 text-lg">
+                                <p className="text-gray-600 mb-4 text-base">
                                     {t("interestSelection_subtitle")}
                                 </p>
-                                <div
-                                    className="inline-flex items-center bg-indigo-50 px-3 py-1 rounded-full text-indigo-700 font-medium text-sm mb-6">
-                                    {
-                                        t("interestSelection_timeAvailability", {
-                                            startDate: formatDate(startSelection.date, formatDate.locale),
-                                            startHour: `${startSelection.hour}:00`,
-                                            endDate: formatDate(endSelection.date, formatDate.locale), 
-                                            endHour: `${endSelection.hour}:00`
-                                        })
-                                    }
+                                <div className="flex flex-wrap gap-2 mb-6">
+                                    <div className="inline-flex items-center bg-gray-100 px-3 py-1.5 rounded-full text-gray-700 font-medium text-xs">
+                                        {
+                                            t("interestSelection_timeAvailability", {
+                                                startDate: formatDate(startSelection.date, formatDate.locale),
+                                                startHour: `${startSelection.hour}:00`,
+                                                endDate: formatDate(endSelection.date, formatDate.locale),
+                                                endHour: `${endSelection.hour}:00`
+                                            })
+                                        }
+                                    </div>
+                                    <div className="inline-flex items-center bg-red-100 px-3 py-1.5 rounded-full text-red-700 font-bold text-xs">
+                                        {t("interestSelection_destination")} {selectedCity}
+                                    </div>
                                 </div>
-                                <br/>
-                                <div className="inline-flex items-center bg-indigo-50 px-3 py-1 rounded-full text-indigo-700 font-medium text-sm mb-6">
-                                    {t("interestSelection_destination")} {selectedCity}
-                                </div>
-                                <h2 className="text-xl font-semibold text-gray-900 border-b pb-2">
+                                <h2 className="text-xl font-bold text-gray-900 border-b border-gray-100 pb-2">
                                     {t("interestSelection_selectionQuestion")}
                                 </h2>
                             </div>
@@ -532,50 +548,62 @@ export function InterestSelection({ user, onBack }) {
 
                             {error && <p className="text-red-500 mb-4">{error}</p>}
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                                 {interests.map(interest => (
                                     <div
                                         key={interest.id}
                                         onClick={() => toggleInterest(interest.id)}
-                                        className={`cursor-pointer rounded-xl border-2 p-4 transition ${
+                                        className={`cursor-pointer rounded-2xl border-2 p-4 transition-all hover:shadow-md ${
                                             interest.selected
-                                                ? "border-indigo-600 bg-indigo-50"
-                                                : "border-gray-200 bg-white"
+                                                ? "border-red-600 bg-red-50 ring-2 ring-red-200"
+                                                : "border-gray-200 bg-white hover:border-gray-300"
                                         }`}
                                     >
-                                        <img
-                                            src={interest.image}
-                                            alt={interest.title}
-                                            className="h-32 w-full object-contain mb-3"
-                                            onError={(e) => {
-                                                e.target.onerror = null;
-                                                e.target.src = defaultImage;
-                                            }}
-                                        />
-                                        <h3 className="text-lg font-semibold text-center">
-                                            {interest.title}
-                                        </h3>
+                                        <div className="h-36 w-full rounded-xl overflow-hidden mb-3 bg-gray-100">
+                                            <img
+                                                src={interest.image}
+                                                alt={interest.title}
+                                                className="h-full w-full object-cover transition-transform hover:scale-105"
+                                                onError={(e) => {
+                                                    e.target.onerror = null;
+                                                    e.target.src = defaultImage;
+                                                }}
+                                            />
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <h3 className="text-base font-bold text-gray-900">
+                                                {interest.title}
+                                            </h3>
+                                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                                interest.selected ? "border-red-600 bg-red-600 text-white" : "border-gray-300"
+                                            }`}>
+                                                {interest.selected && (
+                                                    <span className="text-xs">✓</span>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
 
                             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-gray-100">
-                                <p className={`font-medium ${selectedCount > 0 ? 'text-indigo-600' : 'text-gray-400'}`}>
+                                <p className={`font-semibold ${selectedCount > 0 ? 'text-red-600' : 'text-gray-400'}`}>
                                     {selectedCount > 0
                                         ? `${selectedCount} ${t("interestSelection_selected")}`
                                         : t("interestSelection_selectAtLeastOne")}
                                 </p>
                                 <button
                                     onClick={handleInterestComplete}
-                                    disabled={selectedCount === 0}
-                                    className="w-full sm:w-auto px-8 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition-all disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed active:scale-95 flex items-center justify-center gap-2"
+                                    disabled={selectedCount === 0 || loadingProfileVector}
+                                    className="w-full sm:w-auto px-8 py-3 bg-red-600 text-white font-bold rounded-lg shadow-md hover:bg-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 flex items-center justify-center gap-2"
                                 >
-                                    {t("interestSelection_continue")}
-                                    <ArrowRight className="w-5 h-5" />
-                                    {loadingProfileVector && (
-                                        <div className="flex justify-center py-4">
-                                            <LoadingSpinner size="sm" />
-                                        </div>
+                                    {loadingProfileVector ? (
+                                        <LoadingSpinner size="sm" />
+                                    ) : (
+                                        <>
+                                            {t("interestSelection_continue")}
+                                            <ArrowRight className="w-5 h-5" />
+                                        </>
                                     )}
                                 </button>
                             </div>

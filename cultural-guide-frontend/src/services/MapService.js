@@ -1,17 +1,23 @@
 // services/MapService.js
 import defaultImage from "../images/ImageWithFallback.jpg";
+import { API_BASE_URL, cleanMunicipalityName } from "./apiUtils";
 
 /**
- * Recupera la lista dei mappa filtrata per comune e lingua.
- * @param {string} municipality - Il nome del comune (es. "Massignano")
+ * Recupera i marker della mappa per il comune svizzero selezionato.
+ * @param {string} municipality - Il nome della destinazione svizzera (es. "Lugano")
  */
 export const fetchMap = async (municipality) => {
     if (!municipality) {
-        throw new Error("Municipality is required");
+        return {
+            locations: [],
+            center: { latitude: 46.8182, longitude: 8.2275 }
+        };
     }
 
+    const cleanCity = cleanMunicipalityName(municipality);
+
     try {
-        const url = `http://localhost:5203/api/eppoiapi/map?municipality=${encodeURIComponent(municipality)}`;
+        const url = `${API_BASE_URL}/map?municipality=${encodeURIComponent(cleanCity)}`;
 
         const response = await fetch(url, {
             method: "GET",
@@ -22,44 +28,48 @@ export const fetchMap = async (municipality) => {
         });
 
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
+            console.warn(`HTTP ${response.status} fetching map data for ${cleanCity}`);
+            return {
+                locations: [],
+                center: { latitude: 46.8182, longitude: 8.2275 }
+            };
         }
 
         const data = await response.json().catch(() => ({ markers: [] }));
-        
-        // Check if data has markers array
-        if (!data.markers || !Array.isArray(data.markers)) {
-            console.log("No markers found in response");
-            return [];
-        }
+        const markers = Array.isArray(data.markers) ? data.markers : [];
 
-        // Transform markers to the format expected by MapView
-        const transformedMarkers = data.markers.map((item) => ({
-            id: item.entityId || item.id || String(Math.random()),
-            latitude: item.latitude || 0,
-            longitude: item.longitude || 0,
-            type: item.badgeText || item.typology || "Point of Interest",
-            title: item.entityName || item.name || "Unnamed Location",
-            image: item.imagePath
-                ? (item.imagePath.startsWith('http')
-                    ? item.imagePath
-                    : `http://localhost:5203/api/eppoiapi/proxy-image?imageUrl=${encodeURIComponent(`https://eppoi.io${item.imagePath}`)}`)
-                : defaultImage,
-            description: item.description || item.badgeText || "No description available",
-            location: item.address || "Address not available",
-            openingHours: item.openingHours || "N/A"
-        }));
+        const transformedMarkers = markers.map((item) => {
+            let img = item.imagePath || item.image || item.primaryImage;
+            if (img && img.startsWith('/')) {
+                img = `http://localhost:5203${img}`;
+            }
 
-        // Return the transformed data with center coordinates
+            return {
+                id: item.entityId || item.id || `loc-${Math.random().toString(36).substring(2, 9)}`,
+                latitude: item.latitude != null ? item.latitude : 46.8182,
+                longitude: item.longitude != null ? item.longitude : 8.2275,
+                type: item.badgeText || item.type || "Punto di Interesse",
+                title: item.entityName || item.title || item.name || "Attrazione Svizzera",
+                image: img || defaultImage,
+                description: item.description || item.badgeText || "Destinazione culturale in Svizzera",
+                location: item.address || item.location || `${cleanCity}, Svizzera`,
+                openingHours: item.openingHours || "09:00 - 18:00"
+            };
+        });
+
         return {
             locations: transformedMarkers,
             center: {
-                latitude: data.centerLatitude || (transformedMarkers[0]?.latitude || 52.52),
-                longitude: data.centerLongitude || (transformedMarkers[0]?.longitude || 13.405)
+                latitude: data.centerLatitude || (transformedMarkers[0]?.latitude || 46.8182),
+                longitude: data.centerLongitude || (transformedMarkers[0]?.longitude || 8.2275)
             }
         };
 
     } catch (err) {
-        throw new Error("Network error while fetching map data");
+        console.warn("Network error while fetching Swiss map data:", err);
+        return {
+            locations: [],
+            center: { latitude: 46.8182, longitude: 8.2275 }
+        };
     }
 };

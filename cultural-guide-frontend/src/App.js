@@ -26,8 +26,9 @@ const AuthView = {
 function App() {
     const [currentView, setCurrentView] = useState(AuthView.LOGIN);
     const [user, setUser] = useState(null);
-    const [selectedCity, setSelectedCity] = useState('');
+    const [selectedCity] = useState('Lugano');
     const { i18n } = useTranslation();
+
 
     // Restore saved language from localStorage
     useEffect(() => {

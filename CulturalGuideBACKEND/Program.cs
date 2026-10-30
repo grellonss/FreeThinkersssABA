@@ -82,9 +82,10 @@ builder.Services.ConfigureHttpClientDefaults(b =>
 // Named Eppoi API client
 builder.Services.AddHttpClient("EppoiClient", client =>
 {
-    var baseUrl = builder.Configuration["SwaggerEppoiApi:BaseUrl"] ?? "https://apispm.eppoi.io";
+    var baseUrl = builder.Configuration["SwaggerEppoiApi:BaseUrl"] ?? "https://api3.geo.admin.ch";
     client.BaseAddress = new Uri(baseUrl);
 });
+
 
 // Register the service
 builder.Services.AddScoped<ISwaggerEppoiApiService, SwaggerEppoiApiService>();

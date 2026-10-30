@@ -11,7 +11,11 @@ export function Chatbot({user, onBack}) {
     const [messages, setMessages] = useState([
         {
             id: '1',
-            text: `Hello ${user.name}! How can I help you today?`,
+            text: i18n.language === 'de'
+                ? `Hallo ${user.name}! Ich bin Ihr Schweizer Kulturführer. Wie kann ich Ihnen bei Ihrer Reise in die Schweiz helfen?`
+                : i18n.language === 'en'
+                    ? `Hello ${user.name}! I am your Swiss Cultural Guide. How can I assist you with your travels in Switzerland today?`
+                    : `Ciao ${user.name}! Sono il tuo assistente per la Guida Culturale Svizzera. Come posso aiutarti oggi per il tuo viaggio in Svizzera?`,
             sender: 'bot',
             timestamp: new Date(),
         },
@@ -20,19 +24,18 @@ export function Chatbot({user, onBack}) {
     const [isTyping, setIsTyping] = useState(false);
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
-    const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
     // City selection state
-    const [selectedCity, setSelectedCity] = useState("");
+    const [selectedCity, setSelectedCity] = useState("Lugano");
 
     // Time availability state
     const [startSelection, setStartSelection] = useState({date: null, hour: null});
     const [endSelection, setEndSelection] = useState({date: null, hour: null});
 
     // Preference state
-    const [hasProfileVector, setHasProfileVector] = useState(null);
     const [profileVector, setProfileVector] = useState(null);
+
 
     // Auto-scroll to bottom when new messages arrive
     useEffect(() => {
@@ -44,13 +47,12 @@ export function Chatbot({user, onBack}) {
     // -----------------------------
     useEffect(() => {
         if (!user) {
-            setHasProfileVector(false);
             return;
         }
 
         const checkUserProfileVector = async () => {
             setLoading(true);
-            setError("");
+
 
             try {
                 const userId = user.id || user.email;
@@ -65,24 +67,18 @@ export function Chatbot({user, onBack}) {
                 );
 
                 if (response.ok) {
-                    const profileVector = await response.json();
-                    setProfileVector(profileVector);
-                    setHasProfileVector(true);
-
-                    console.log("User preferences found:", profileVector);
-                } else if (response.status === 404) {
-                    // No preferences found yet for this user
-                    setHasProfileVector(false);
-                } else {
-                    throw new Error(`HTTP ${response.status}`);
+                    const vector = await response.json();
+                    setProfileVector(vector);
+                    if (vector.municipality) {
+                        setSelectedCity(vector.municipality);
+                    }
                 }
             } catch (err) {
-                toast.error("Error checking preferences:", err);
-                setError("Failed to check user profile vector.");
-                setHasProfileVector(false);
+                console.warn("User preferences not found or error:", err);
             } finally {
                 setLoading(false);
             }
+
         };
 
         checkUserProfileVector();

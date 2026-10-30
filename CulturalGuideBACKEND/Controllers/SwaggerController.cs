@@ -15,203 +15,253 @@ using System.Text.Json;
 public class EppoiApiController : ControllerBase
 {
     private readonly ISwaggerEppoiApiService _swaggerEppoiService;
-    private readonly string _swaggerEppoiBaseUrl;
-    private readonly string _swaggerEppoiApiKey;
     private readonly ILogger<EppoiApiController> _logger;
     private readonly AppDbContext _db;
 
     public EppoiApiController(
-        ISwaggerEppoiApiService swaggerEppoiService, IConfiguration config, ILogger<EppoiApiController> logger, AppDbContext db)
+        ISwaggerEppoiApiService swaggerEppoiService,
+        IConfiguration config,
+        ILogger<EppoiApiController> logger,
+        AppDbContext db)
     {
         _swaggerEppoiService = swaggerEppoiService;
-        _swaggerEppoiBaseUrl = config["SwaggerEppoiApi:BaseUrl"]!;
-        _swaggerEppoiApiKey = config["SwaggerEppoiApi:ApiKey"]!;
         _logger = logger;
         _db = db;
     }
 
-    // --------------------------------------------------------------------
-    //  GENERAL INFORMATION
-    // --------------------------------------------------------------------
-    // This controller acts as the BACKEND interface for the external API:
-    //
-    //   https://apispm.eppoi.io/swagger/index.html
-    //
-    // All calls to the external API go through a dedicated service:
-    //   IEppoiApiService
-    //
-    // Authentication to Eppoi is also handled inside that service.
-    //
-    // In the future, this controller will transform the API responses
-    // into Frontend DTOs for optimal presentation.
-    // --------------------------------------------------------------------
-
-
     // ===============================
-    //  EXAMPLE ENDPOINT #1
-    //  Fetch POIs in a city
+    //  MUNICIPALITIES (SWITZERLAND)
     // ===============================
-    [HttpGet("pois")]
-    public async Task<IActionResult> GetPointsOfInterest([FromQuery] string city)
+    [HttpGet("municipalities")]
+    public async Task<IActionResult> GetMunicipalities([FromQuery] string? search = null)
     {
-        // Call service (implementation later)
-        var result = await _swaggerEppoiService.GetPointsOfInterestAsync(city);
-
-        return Ok(result);
-    }
-    
-    // ===============================
-    //  Proxy Image Endpoint for POI images
-    // ===============================
-    [HttpGet("proxy-image")]
-    public async Task<IActionResult> ProxyImage([FromQuery] string imageUrl)
-    {
-        if (string.IsNullOrEmpty(imageUrl))
-        { return BadRequest("Image URL is required"); }
-
-        try
+        _logger.LogInformation("Fetching Swiss municipalities (search: {Search})...", search);
+        if (!string.IsNullOrWhiteSpace(search))
         {
-	        using var httpClient = new HttpClient();
-	        var imageBytes = await httpClient.GetByteArrayAsync(imageUrl);
-    
-	        // Detect content type from URL extension
-	        var contentType = imageUrl.EndsWith(".webp") ? "image/webp" 
-		        : imageUrl.EndsWith(".jpg") || imageUrl.EndsWith(".jpeg") ? "image/jpeg"
-		        : imageUrl.EndsWith(".png") ? "image/png"
-		        : "image/jpeg";
-    
-	        return File(imageBytes, contentType);
-        }	
-        catch (Exception ex)
-        {
-	        _logger.LogError(ex, "Failed to proxy image: {ImageUrl}", imageUrl);
-	        return NotFound();
+            var searchResults = await _swaggerEppoiService.SearchMunicipalitiesAsync(search);
+            return Ok(searchResults);
         }
+
+        var municipalities = await _swaggerEppoiService.GetMunicipalitiesAsync();
+        return Ok(municipalities);
     }
 
-
     // ===============================
-    //  EXAMPLE ENDPOINT #2
-    //  Fetch details for a EatAndDrink POI by municipality
+    //  CATEGORIES
     // ===============================
-	
-	/// <summary>
-	/// Retrieves the Eat And Drink (POIs) for a given city.
-	/// </summary>
-	/// <param name="city">Name of the municipality</param>
-	/// <returns>List of POIs</returns>
-	[HttpGet("eat-and-drinks")]
-    public async Task<IActionResult> GetEatAndDrinks(
-        [FromQuery] string municipality,
-        [FromQuery] string language)
-    {
-        var result = await _swaggerEppoiService.GetEatAndDrinksAsync(municipality, language);
-        return Ok(result);
-    }
-
-     // ===============================
-     //  DETAIL: Fetch SINGLE EatAndDrink by ID
-     // ===============================
-    [HttpGet("eat-and-drinks/detail/{id}")]
-        public async Task<IActionResult> GetEatAndDrinkDetail(string id, [FromQuery] string language = "it")
-        {
-            try
-            {
-                var result = await _swaggerEppoiService.GetEatAndDrinkDetailAsync(id, language);
-
-                if (result == null) return NotFound($"POI with ID {id} not found.");
-
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error fetching details for ID: {Id}", id);
-                return StatusCode(500, "Internal server error");
-            }
-        }
-    // ===============================
-    //  EXAMPLE ENDPOINT #3
-    //  Search for experiences based on interests
-    // ===============================
-	/// <summary>
-	/// Returns all available categories available for a specific municipality from the external Eppoi API.
-	/// </summary>
-	/// <remarks>
-	/// Maps to: https://apispm.eppoi.io/api/categories
-	/// </remarks>
-	/// <response code="200">List of municipalities</response>
-	/// <response code="500">Server error fetching municipalities</response>
-    [HttpPost("search")]
-    public async Task<IActionResult> SearchExperiences([FromBody] SwaggerEppoiRequest request)
-    {
-        var result = await _swaggerEppoiService.SearchExperiencesAsync(request);
-        return Ok(result);
-    }
-    
-    // ===============================
-    //  EXAMPLE ENDPOINT #4
-    //  Fetch categories for a municipality
-    //  Maps to:
-    //  https://apispm.eppoi.io/api/categories?municipality=Massignano&language=it
-    // ===============================
-	
-	/// <summary>
-	/// Returns all available categories available for a specific municipality from the external Eppoi API.
-	/// </summary>
-	/// <remarks>
-	/// Maps to: https://apispm.eppoi.io/api/categories
-	/// </remarks>
-	/// <response code="200">List of municipalities</response>
-	/// <response code="500">Server error fetching municipalities</response>
     [HttpGet("categories")]
     public async Task<IActionResult> GetCategories(
-        [FromQuery] string municipality,
+        [FromQuery] string municipality = "Lugano",
         [FromQuery] string language = "it")
     {
         var categories = await _swaggerEppoiService.GetCategoriesAsync(municipality, language);
         return Ok(categories);
     }
-    
-    // ===============================
-    //  EXAMPLE ENDPOINT #5
-    //  municipalities
-    //  Maps to: https://apispm.eppoi.io/api/municipalities
-    // ===============================
-	/// <summary>
-	/// Returns all available municipalities from the external Eppoi API.
-	/// </summary>
-	/// <remarks>
-	/// Maps to: https://apispm.eppoi.io/api/organizations/municipalities
-	/// </remarks>
-	/// <response code="200">List of municipalities</response>
-	/// <response code="500">Server error fetching municipalities</response>
-    [HttpGet("municipalities")]
-    public async Task<IActionResult> GetMunicipalities()
-    {
-        // print log
-        _logger.LogInformation("Fetching municipalities from EppoiApiController...");
-        var municipalities = await _swaggerEppoiService.GetMunicipalitiesAsync();
-        return Ok(municipalities);
-    }
 
+    // ===============================
+    //  MAP ENDPOINT
+    // ===============================
     [HttpGet("map")]
-    public async Task<IActionResult> GetMap([FromQuery] string municipality)
+    public async Task<IActionResult> GetMap([FromQuery] string municipality = "Lugano")
     {
         var mapData = await _swaggerEppoiService.GetMapAsync(municipality);
         return Ok(mapData);
     }
-	
-	
-	
+
+    // ===============================
+    //  GENERIC CATEGORY CARDS LIST
+    // ===============================
+    [HttpGet("cards")]
+    public async Task<IActionResult> GetCards(
+        [FromQuery] string? category,
+        [FromQuery] string municipality = "Lugano",
+        [FromQuery] string language = "it")
+    {
+        var cat = string.IsNullOrWhiteSpace(category) ? "artculture" : category;
+        var cards = await _swaggerEppoiService.GetCategoryCardsAsync(cat, municipality, language);
+        return Ok(cards);
+    }
+
+    [HttpGet("{category}/card-list")]
+    public async Task<IActionResult> GetCardList(
+        string category,
+        [FromQuery] string municipality = "Lugano",
+        [FromQuery] string language = "it")
+    {
+        var cards = await _swaggerEppoiService.GetCategoryCardsAsync(category, municipality, language);
+        return Ok(cards);
+    }
+
+    // ===============================
+    //  SPECIFIC CATEGORY ENDPOINTS
+    // ===============================
+    [HttpGet("eat-and-drinks")]
+    public async Task<IActionResult> GetEatAndDrinks(
+        [FromQuery] string municipality = "Lugano",
+        [FromQuery] string language = "it")
+    {
+        var cards = await _swaggerEppoiService.GetCategoryCardsAsync("eatanddrink", municipality, language);
+        return Ok(cards);
+    }
+
+    [HttpGet("art-culture")]
+    public async Task<IActionResult> GetArtAndCulture(
+        [FromQuery] string municipality = "Lugano",
+        [FromQuery] string language = "it")
+    {
+        var cards = await _swaggerEppoiService.GetCategoryCardsAsync("artculture", municipality, language);
+        return Ok(cards);
+    }
+
+    [HttpGet("nature")]
+    public async Task<IActionResult> GetNature(
+        [FromQuery] string municipality = "Lugano",
+        [FromQuery] string language = "it")
+    {
+        var cards = await _swaggerEppoiService.GetCategoryCardsAsync("nature", municipality, language);
+        return Ok(cards);
+    }
+
+    [HttpGet("routes")]
+    [HttpGet("itineraries")]
+    public async Task<IActionResult> GetRoutes(
+        [FromQuery] string municipality = "Lugano",
+        [FromQuery] string language = "it")
+    {
+        var cards = await _swaggerEppoiService.GetCategoryCardsAsync("routes", municipality, language);
+        return Ok(cards);
+    }
+
+    [HttpGet("events")]
+    public async Task<IActionResult> GetEvents(
+        [FromQuery] string municipality = "Lugano",
+        [FromQuery] string language = "it")
+    {
+        var cards = await _swaggerEppoiService.GetCategoryCardsAsync("events", municipality, language);
+        return Ok(cards);
+    }
+
+    [HttpGet("sleep")]
+    public async Task<IActionResult> GetSleep(
+        [FromQuery] string municipality = "Lugano",
+        [FromQuery] string language = "it")
+    {
+        var cards = await _swaggerEppoiService.GetCategoryCardsAsync("sleep", municipality, language);
+        return Ok(cards);
+    }
+
+    [HttpGet("typical-products")]
+    public async Task<IActionResult> GetTypicalProducts(
+        [FromQuery] string municipality = "Lugano",
+        [FromQuery] string language = "it")
+    {
+        var cards = await _swaggerEppoiService.GetCategoryCardsAsync("typicalproducts", municipality, language);
+        return Ok(cards);
+    }
+
+    [HttpGet("shopping")]
+    public async Task<IActionResult> GetShopping(
+        [FromQuery] string municipality = "Lugano",
+        [FromQuery] string language = "it")
+    {
+        var cards = await _swaggerEppoiService.GetCategoryCardsAsync("shopping", municipality, language);
+        return Ok(cards);
+    }
+
+    [HttpGet("entertainment-leisure")]
+    [HttpGet("recreation-fun")]
+    public async Task<IActionResult> GetEntertainmentLeisure(
+        [FromQuery] string municipality = "Lugano",
+        [FromQuery] string language = "it")
+    {
+        var cards = await _swaggerEppoiService.GetCategoryCardsAsync("entertainmentleisure", municipality, language);
+        return Ok(cards);
+    }
+
+    [HttpGet("services")]
+    [HttpGet("economic-operators")]
+    [HttpGet("points-of-sale")]
+    public async Task<IActionResult> GetServices(
+        [FromQuery] string municipality = "Lugano",
+        [FromQuery] string language = "it")
+    {
+        var cards = await _swaggerEppoiService.GetCategoryCardsAsync("services", municipality, language);
+        return Ok(cards);
+    }
+
+    [HttpGet("articles-magazines")]
+    [HttpGet("articles")]
+    [HttpGet("organizations")]
+    public async Task<IActionResult> GetArticles(
+        [FromQuery] string municipality = "Lugano",
+        [FromQuery] string language = "it")
+    {
+        var cards = await _swaggerEppoiService.GetCategoryCardsAsync("articles", municipality, language);
+        return Ok(cards);
+    }
+
+    // ===============================
+    //  DETAILS
+    // ===============================
+    [HttpGet("eat-and-drinks/detail/{id}")]
+    [HttpGet("detail/{id}")]
+    [HttpGet("{category}/detail/{id}")]
+    public async Task<IActionResult> GetDetail(
+        string id,
+        [FromQuery] string language = "it")
+    {
+        try
+        {
+            var result = await _swaggerEppoiService.GetCardDetailAsync(id, language);
+            if (result == null)
+            {
+                return NotFound(new { message = $"POI with ID {id} not found." });
+            }
+
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching detail for ID: {Id}", id);
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    // ===============================
+    //  IMAGE PROXY
+    // ===============================
+    [HttpGet("proxy-image")]
+    public async Task<IActionResult> ProxyImage([FromQuery] string imageUrl)
+    {
+        if (string.IsNullOrEmpty(imageUrl))
+        {
+            return BadRequest("Image URL is required");
+        }
+
+        try
+        {
+            using var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Add("User-Agent", "CulturalGuideSwitzerland/2.0");
+            var imageBytes = await httpClient.GetByteArrayAsync(imageUrl);
+
+            var contentType = imageUrl.EndsWith(".webp", StringComparison.OrdinalIgnoreCase) ? "image/webp"
+                : imageUrl.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ? "image/png"
+                : imageUrl.EndsWith(".svg", StringComparison.OrdinalIgnoreCase) ? "image/svg+xml"
+                : "image/jpeg";
+
+            return File(imageBytes, contentType);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to proxy image: {ImageUrl}", imageUrl);
+            return Redirect(imageUrl);
+        }
+    }
+
     // ===============================
     //  PROFILE VECTOR ENDPOINTS
     // ===============================
-    /// <summary>
-    /// POST user categories, timeAvailability and municipality as a profile vector.
-    /// </summary>
-    /// <response code="200">List of municipalities</response>
-    /// <response code="500">Server error fetching municipalities</response>
-	[HttpPost("save-profile-vector")]
+    [HttpPost("save-profile-vector")]
     public async Task<IActionResult> SavePreferences([FromBody] ProfileVectorDTO profileVectorDto)
     {
         try
@@ -231,16 +281,14 @@ public class EppoiApiController : ControllerBase
                 return BadRequest(new { message = "End time must be after start time" });
             }
 
-            // ------------
-            // Check if preference already exists for this user
-            // ------------
+            var cleanMuni = SwaggerEppoiApiService.CleanMunicipality(profileVectorDto.Municipality);
+
             var existingPreference = await _db.ProfileVector
                 .FirstOrDefaultAsync(p => p.UserId == profileVectorDto.UserId);
 
             if (existingPreference != null)
             {
-                // Update existing preference
-                existingPreference.Municipality = profileVectorDto.Municipality;
+                existingPreference.Municipality = cleanMuni;
                 existingPreference.StartTime = profileVectorDto.StartTime;
                 existingPreference.EndTime = profileVectorDto.EndTime;
                 existingPreference.SelectedCategories = JsonSerializer.Serialize(profileVectorDto.SelectedCategories);
@@ -251,11 +299,10 @@ public class EppoiApiController : ControllerBase
             }
             else
             {
-                // Create new profile vector
                 var newPreference = new ProfileVector
                 {
                     UserId = profileVectorDto.UserId,
-                    Municipality = profileVectorDto.Municipality,
+                    Municipality = cleanMuni,
                     StartTime = profileVectorDto.StartTime,
                     EndTime = profileVectorDto.EndTime,
                     SelectedCategories = JsonSerializer.Serialize(profileVectorDto.SelectedCategories),
@@ -273,7 +320,7 @@ public class EppoiApiController : ControllerBase
             {
                 message = "Preferences saved successfully",
                 userId = profileVectorDto.UserId,
-                municipality = profileVectorDto.Municipality,
+                municipality = cleanMuni,
                 categoriesCount = profileVectorDto.SelectedCategories.Count
             });
         }
@@ -284,13 +331,6 @@ public class EppoiApiController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// GET user categories, timeAvailability and municipality as a profile vector.
-    /// returns either the profile vector or 404 if not found
-    /// </summary>
-    /// <response code="200">List of municipalities</response>
-    /// <response code="404">No preferences found for this user</response>
-    /// <response code="500">Server error fetching municipalities</response>
     [HttpGet("profile-vector/{userId}")]
     public async Task<IActionResult> GetPreferences(string userId)
     {
@@ -324,11 +364,6 @@ public class EppoiApiController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// DELETE user categories, timeAvailability and municipality as a profile vector.
-    /// </summary>
-    /// <response code="200">List of municipalities</response>
-    /// <response code="500">Server error fetching municipalities</response>
     [HttpDelete("profile-vector/{userId}")]
     public async Task<IActionResult> DeletePreferences(string userId)
     {
@@ -346,7 +381,6 @@ public class EppoiApiController : ControllerBase
             await _db.SaveChangesAsync();
 
             _logger.LogInformation("Deleted preferences for user: {UserId}", userId);
-
             return Ok(new { message = "Preferences deleted successfully" });
         }
         catch (Exception ex)
@@ -355,5 +389,11 @@ public class EppoiApiController : ControllerBase
             return StatusCode(500, new { message = "Error deleting preferences" });
         }
     }
-}
 
+    [HttpPost("search")]
+    public async Task<IActionResult> SearchExperiences([FromBody] SwaggerEppoiRequest request)
+    {
+        var result = await _swaggerEppoiService.SearchExperiencesAsync(request);
+        return Ok(result);
+    }
+}

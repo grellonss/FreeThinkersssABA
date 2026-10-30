@@ -1,6 +1,9 @@
 {
   "header_welcome": "Welcome",
-  "header_title": "Cultural Guide",
+  "header_title": "Swiss Cultural Guide",
+  "start_hero_tag": "Confederatio Helvetica",
+  "start_hero_title": "Explore Swiss Culture & Alpine Heritage",
+  "start_hero_subtitle": "Historic monuments, UNESCO castles, alpine summits, and culinary traditions across all 26 Swiss cantons.",
 
   "login_title": "Welcome back",
   "login_subtitle": "Sign in to your account",
@@ -68,8 +71,8 @@
   "menuItems_chatbot_description": "Chat with our AI assistant",
   "menuItems_preferences_title": "Category Settings",
   "menuItems_preferences_description": "Customize your preferences",
-  "menuItems_recommendations_title": "City Recommendations",
-  "menuItems_recommendations_description": "Discover your next destination",
+  "menuItems_recommendations_title": "Swiss Recommendations",
+  "menuItems_recommendations_description": "Discover Swiss sights, museums, alpine peaks, and grotti",
   
   "passwordRecovery_email": "Email address",
   "passwordRecovery_emailSent": "Email sent",
@@ -83,7 +86,7 @@
   "passwordRecovery_emailPlaceholder": "name@example.com",
 
   "email_registration_salutation": "Hello",
-  "email_registration_subject": "Thank you for registering with Kulturführer!",
+  "email_registration_subject": "Thank you for registering with Swiss Cultural Guide!",
   "email_registration_link": "Please click the following link to verify your email address:",
   "email_registration_verifyMail": "Verify Email",
   "email_registration_ignoreMessage": "If you did not register, please ignore this email.",
@@ -93,16 +96,17 @@
   "email_passwordRecovery_link": "Reset Password",
   "email_passwordRecovery_ignoreMessage": "If you did not make this request, you may ignore this message.",
 
-  "citySelection_chooseCity": "Select your city",
-  "citySelection_searchACitySubtitle": "Find a city or search from the list below",
-  "citySelection_searchACityTitle": "Find a city",
-  "citySelection_Lens": "Insert a city...",
-  "citySelection_noCitiesFound": "No city was found",
-  "citySelection_selectFromList": "Or select it from the list",
-  "citySelection_dropDownMenu": "Select a city",
-  "citySelection_selectCity": "City selected:",
+  "citySelection_chooseCity": "Choose your Swiss Destination",
+  "citySelection_searchACitySubtitle": "Search any municipality across all 26 Swiss cantons or choose from the list",
+  "citySelection_searchACityTitle": "Search Swiss municipality",
+  "citySelection_Lens": "Enter Swiss city or village (e.g. Lugano, Zurich, Bern, Zermatt...)",
+  "citySelection_noCitiesFound": "No Swiss municipality found",
+  "citySelection_selectFromList": "Featured Swiss destinations",
+  "citySelection_dropDownMenu": "Select a Swiss destination",
+  "citySelection_selectCity": "Selected Swiss destination:",
   "citySelection_Continue": "Continue",
   "citySelection_goBack": "Back",
+
 
   "swipeCarousel_viewDetails": "View Details",
   "swipeCarousel_loadingMap": "Loading Map...",

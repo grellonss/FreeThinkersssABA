@@ -12,10 +12,14 @@ namespace CulturalGuideBACKEND.Services.SwaggerEppoiService
         Task<object> GetEatAndDrinkDetailAsync(string id, string language);
 
         Task<IEnumerable<EppoiCategoriesDTO>> GetCategoriesAsync(string municipality, string language);
-		Task<IEnumerable<EppoiMunicipalitiesDTO>> GetMunicipalitiesAsync();
-		Task<IEnumerable<EppoiEatAndDrinksDTO>> GetEatAndDrinksAsync(string municipality, string language);
-		Task<IEnumerable<EppoiMunicipalitiesDTO>> GetMunicipalitiesIntoDbAsync();
-		Task<IEnumerable<EppoiUnifiedCardDTO>> GetCardsAsync(string[] municipalities, string[] languages, string[] endpoints);
-		Task<object?> GetMapAsync(string municipality);
+        Task<IEnumerable<EppoiMunicipalitiesDTO>> GetMunicipalitiesAsync();
+        Task<IEnumerable<EppoiMunicipalitiesDTO>> SearchMunicipalitiesAsync(string query);
+        Task<IEnumerable<EppoiEatAndDrinksDTO>> GetEatAndDrinksAsync(string municipality, string language);
+        Task<IEnumerable<EppoiMunicipalitiesDTO>> GetMunicipalitiesIntoDbAsync();
+        Task<IEnumerable<EppoiUnifiedCardDTO>> GetCardsAsync(string[] municipalities, string[] languages, string[] endpoints);
+        Task<IEnumerable<EppoiUnifiedCardDTO>> GetCategoryCardsAsync(string category, string municipality, string language);
+        Task<object?> GetCardDetailAsync(string id, string language);
+        Task<object?> GetMapAsync(string municipality);
     }
 }
+
