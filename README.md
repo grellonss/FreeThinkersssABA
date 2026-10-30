@@ -84,3 +84,14 @@ npm start
 - **Swipe Carousel Interattivo**: Navigazione a scorrimento tra le schede culturali svizzere con fotografie, distanze, orari e vista dettagliata.
 - **Mappa Interattiva Leaflet**: Visualizzazione geografica dei marker su mappa OpenStreetMap centrata automaticamente sulla Svizzera e sulle coordinate del comune scelto.
 - **Assistente AI Chatbot**: Assistente virtuale basato su Gemini che risponde in lingua naturale con consigli culturali contestualizzati sui luoghi e sui monumenti della destinazione svizzera selezionata.
+
+---
+
+## 🔑 Credenziali di Test per il Login
+
+Nel database SQLite locale viene creato automaticamente all'avvio un utente di test con le seguenti credenziali predefinite:
+
+- **Email**: `test@example.com`
+- **Password**: `Password123`
+
+In alternativa, è sempre possibile registrare un nuovo account direttamente dalla schermata di registrazione della web app.
