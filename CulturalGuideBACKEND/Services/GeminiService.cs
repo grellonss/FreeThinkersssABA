@@ -37,20 +37,8 @@ namespace CulturalGuideBACKEND.Services
             {
                 if (string.IsNullOrWhiteSpace(_apiKey) || _apiKey == "NEVER-PUSH-TO-GIT" || _apiKey.Contains("YOUR_"))
                 {
-                    _logger.LogWarning("Gemini API key is not configured in appsettings.json. Returning context-aware Swiss response.");
-                    var isDe = language?.StartsWith("de", StringComparison.OrdinalIgnoreCase) ?? false;
-                    var isEn = language?.StartsWith("en", StringComparison.OrdinalIgnoreCase) ?? false;
-
-                    if (isDe)
-                    {
-                        return $"[Schweizer Kulturführer für {municipality}]: Willkommen in {municipality}! Basierend auf Ihren Vorlieben empfehle ich den Besuch der historischen Altstadt, der Panoramawanderwege und der lokalen Gastronomie.\n{context}";
-                    }
-                    if (isEn)
-                    {
-                        return $"[Swiss Cultural Guide for {municipality}]: Welcome to {municipality}! Based on your interests, I recommend exploring the historic cultural heritage, scenic alpine panoramas, and traditional gastronomy.\n{context}";
-                    }
-
-                    return $"[Guida Culturale Svizzera per {municipality}]: Benvenuto a {municipality}! In base ai tuoi interessi e all'inventario culturale svizzero, ti consiglio di esplorare i monumenti storici, la magnifica vista panoramica e i sapori tipici della regione.\n{context}";
+                    _logger.LogInformation("Gemini API key is not configured in appsettings.json. Returning context-aware Swiss response.");
+                    return GenerateSmartFallback(userMessage, municipality, language, context);
                 }
 
                 var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={_apiKey}";
@@ -101,6 +89,133 @@ namespace CulturalGuideBACKEND.Services
                 _logger.LogError(ex, "Error calling Gemini API");
                 return "I encountered an error processing your request. Please try again.";
             }
+        }
+
+        private string GenerateSmartFallback(string userMessage, string municipality, string language, string context)
+        {
+            var isDe = language?.StartsWith("de", StringComparison.OrdinalIgnoreCase) ?? false;
+            var isEn = language?.StartsWith("en", StringComparison.OrdinalIgnoreCase) ?? false;
+            var msg = userMessage.ToLowerInvariant();
+
+            // Extract titles and descriptions from context
+            var poiMatches = new List<(string Title, string Category, string Address, string Description)>();
+            var lines = context.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            string? currentTitle = null, currentCat = null, currentAddr = null, currentDesc = null;
+
+            foreach (var line in lines)
+            {
+                var trimmed = line.Trim();
+                if (trimmed.StartsWith("- Title:", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!string.IsNullOrEmpty(currentTitle))
+                    {
+                        poiMatches.Add((currentTitle, currentCat ?? "general", currentAddr ?? "", currentDesc ?? ""));
+                        currentCat = null; currentAddr = null; currentDesc = null;
+                    }
+                    currentTitle = trimmed.Substring("- Title:".Length).Trim();
+                }
+                else if (trimmed.StartsWith("Category:", StringComparison.OrdinalIgnoreCase))
+                {
+                    currentCat = trimmed.Substring("Category:".Length).Trim();
+                }
+                else if (trimmed.StartsWith("Address:", StringComparison.OrdinalIgnoreCase))
+                {
+                    currentAddr = trimmed.Substring("Address:".Length).Trim();
+                }
+                else if (trimmed.StartsWith("Description:", StringComparison.OrdinalIgnoreCase))
+                {
+                    currentDesc = trimmed.Substring("Description:".Length).Trim();
+                }
+            }
+            if (!string.IsNullOrEmpty(currentTitle))
+            {
+                poiMatches.Add((currentTitle, currentCat ?? "general", currentAddr ?? "", currentDesc ?? ""));
+            }
+
+            // Filter relevant POIs based on query
+            List<(string Title, string Category, string Address, string Description)> relevantPois;
+            if (msg.Contains("cibo") || msg.Contains("mangia") || msg.Contains("ristoran") || msg.Contains("grotto") || msg.Contains("grotti") || msg.Contains("cioccolat") || msg.Contains("formaggi") || msg.Contains("essen") || msg.Contains("food") || msg.Contains("eat") || msg.Contains("drink"))
+            {
+                relevantPois = poiMatches.Where(p => p.Category.Contains("eat") || p.Category.Contains("typical") || p.Category.Contains("drink")).ToList();
+            }
+            else if (msg.Contains("museo") || msg.Contains("musei") || msg.Contains("arte") || msg.Contains("cultur") || msg.Contains("monument") || msg.Contains("storia") || msg.Contains("museum") || msg.Contains("kunst") || msg.Contains("art"))
+            {
+                relevantPois = poiMatches.Where(p => p.Category.Contains("art") || p.Category.Contains("cultur")).ToList();
+            }
+            else if (msg.Contains("natura") || msg.Contains("lago") || msg.Contains("montagna") || msg.Contains("sentier") || msg.Contains("passeggiata") || msg.Contains("alpi") || msg.Contains("see") || msg.Contains("berge") || msg.Contains("natur") || msg.Contains("lake") || msg.Contains("trail"))
+            {
+                relevantPois = poiMatches.Where(p => p.Category.Contains("nature") || p.Category.Contains("route")).ToList();
+            }
+            else
+            {
+                relevantPois = poiMatches.Take(3).ToList();
+            }
+
+            if (!relevantPois.Any())
+            {
+                relevantPois = poiMatches.Take(3).ToList();
+            }
+
+            var sb = new StringBuilder();
+            if (isDe)
+            {
+                sb.AppendLine($"🇨🇭 Schweizer Kulturführer – Empfehlungen für {municipality}:");
+                sb.AppendLine();
+                if (relevantPois.Any())
+                {
+                    sb.AppendLine($"Hier sind die empfohlenen Höhepunkte für Ihren Besuch in {municipality}:");
+                    foreach (var poi in relevantPois.Take(3))
+                    {
+                        sb.AppendLine($"• **{poi.Title}**");
+                        if (!string.IsNullOrWhiteSpace(poi.Address)) sb.AppendLine($"  📍 {poi.Address}");
+                        if (!string.IsNullOrWhiteSpace(poi.Description)) sb.AppendLine($"  ℹ️ {poi.Description}");
+                    }
+                }
+                else
+                {
+                    sb.AppendLine($"In {municipality} können Sie wunderschöne historische Orte, erstklassige Museen und malerische Schweizer Landschaften entdecken.");
+                }
+            }
+            else if (isEn)
+            {
+                sb.AppendLine($"🇨🇭 Swiss Cultural Guide – Recommendations for {municipality}:");
+                sb.AppendLine();
+                if (relevantPois.Any())
+                {
+                    sb.AppendLine($"Here are the top cultural recommendations for your stay in {municipality}:");
+                    foreach (var poi in relevantPois.Take(3))
+                    {
+                        sb.AppendLine($"• **{poi.Title}**");
+                        if (!string.IsNullOrWhiteSpace(poi.Address)) sb.AppendLine($"  📍 {poi.Address}");
+                        if (!string.IsNullOrWhiteSpace(poi.Description)) sb.AppendLine($"  ℹ️ {poi.Description}");
+                    }
+                }
+                else
+                {
+                    sb.AppendLine($"In {municipality}, you can explore historic landmarks, Swiss cultural heritage, and scenic alpine panoramas.");
+                }
+            }
+            else
+            {
+                sb.AppendLine($"🇨🇭 Guida Culturale Svizzera – Suggerimenti per {municipality}:");
+                sb.AppendLine();
+                if (relevantPois.Any())
+                {
+                    sb.AppendLine($"Ecco i punti di maggiore interesse selezionati per te a {municipality}:");
+                    foreach (var poi in relevantPois.Take(3))
+                    {
+                        sb.AppendLine($"• **{poi.Title}**");
+                        if (!string.IsNullOrWhiteSpace(poi.Address)) sb.AppendLine($"  📍 {poi.Address}");
+                        if (!string.IsNullOrWhiteSpace(poi.Description)) sb.AppendLine($"  ℹ️ {poi.Description}");
+                    }
+                }
+                else
+                {
+                    sb.AppendLine($"A {municipality} puoi scoprire splendidi beni storici, musei dell'inventario culturale svizzero e suggestive passeggiate panoramiche.");
+                }
+            }
+
+            return sb.ToString().TrimEnd();
         }
     }
 

@@ -6,7 +6,7 @@ import { LoadingSpinner } from "./ui_components/Loading";
 import { ChevronLeft, MapPin, Search, ArrowRight } from "lucide-react";
 import { toast } from 'sonner';
 
-export function InterestSelection({ user, onBack }) {
+export function InterestSelection({ user, onBack, onComplete }) {
     const { t, i18n } = useTranslation();
 
     // Step management
@@ -249,8 +249,12 @@ export function InterestSelection({ user, onBack }) {
 
             toast.success(t("interestSelection_profileVectorSavedSuccessfully"));
 
-            // Go back to start after successful save
-            onBack();
+            // Navigate directly to recommendations with the selected city
+            if (onComplete) {
+                onComplete(cleanCity);
+            } else {
+                onBack();
+            }
 
         } catch (err) {
             console.error("Failed to save preferences:", err);

@@ -48,6 +48,21 @@ const PrevArrow = ({ onClick }) => (
 );
 
 
+const ALL_CATEGORIES = [
+    "eatanddrink",
+    "entertainmentleisure",
+    "artculture",
+    "articles",
+    "organizations",
+    "routes",
+    "shopping",
+    "events",
+    "nature",
+    "services",
+    "sleep",
+    "typicalproducts"
+];
+
 export function SwipeCarousel({ onViewDetails, onBack, municipality, user, onNavigateToPreferences }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -161,22 +176,6 @@ export function SwipeCarousel({ onViewDetails, onBack, municipality, user, onNav
         checkUserProfileVector();
     }, [user]);
 
-    // All available categories constant (move outside component or define at top)
-    const ALL_CATEGORIES = [
-        "eatanddrink",
-        "entertainmentleisure",
-        "artculture",
-        "articles",
-        "organizations",
-        "routes",
-        "shopping",
-        "events",
-        "nature",
-        "services",
-        "sleep",
-        "typicalproducts"
-    ];
-
     // -----------------------------
 // Fetch data according to profile vector
 // -----------------------------
@@ -289,11 +288,7 @@ export function SwipeCarousel({ onViewDetails, onBack, municipality, user, onNav
         };
 
         loadAllData();
-
-        // IMPORTANT: Only depend on showAllCategories, NOT on profileVector
-        // This prevents re-fetching when profileVector changes
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [showAllCategories, hasProfileVector, municipality, i18n.language, t]);
+    }, [showAllCategories, hasProfileVector, profileVector, municipality, i18n.language, t]);
 
 
     // -----------------------------
@@ -628,8 +623,22 @@ export function SwipeCarousel({ onViewDetails, onBack, municipality, user, onNav
                 border: none;
                 cursor: pointer;
               }
+              .slick-track {
+                display: flex !important;
+                align-items: stretch !important;
+              }
               .slick-slide {
                 padding: 0 10px;
+                height: auto !important;
+                display: flex !important;
+                justify-content: center !important;
+              }
+              .slick-slide > div {
+                width: 100% !important;
+                max-width: 520px !important;
+                margin: 0 auto !important;
+                display: flex !important;
+                height: 100% !important;
               }
               .slick-list {
                 overflow: visible;
@@ -637,45 +646,52 @@ export function SwipeCarousel({ onViewDetails, onBack, municipality, user, onNav
             `}
                             </style>
 
-                            <div className="max-w-2xl mx-auto">
+                            <div className="max-w-2xl mx-auto px-2">
                                 <Slider {...settings}>
                                     {fetchedCardList.map((fetchedCard) => (
-                                        <div key={fetchedCard.id} className="px-2">
-                                            <div className="bg-white rounded-2xl shadow-xl overflow-hidden transition-all border-2 border-transparent hover:border-indigo-600 max-w-sm md:max-w-none mx-auto">                                                
-                                                <div className="relative h-48 sm:h-56 md:h-64 lg:h-80 overflow-hidden">
-                                                    <img
-                                                        alt={fetchedCard.title}
-                                                        src={fetchedCard.image}
-                                                        className="w-full h-full object-cover"
-                                                        onError={(e) => {
-                                                            e.target.onerror = null;
-                                                            e.target.src = defaultImage;
-                                                        }}
-                                                    />
-                                                    <div className="absolute top-4 right-4 bg-white px-3 py-1 rounded-full shadow-xl">
-                                                        <span className="text-indigo-600 capitalize text-xs md:text-sm">{fetchedCard.type}</span>
+                                        <div key={fetchedCard.id} className="px-2 py-3 w-full flex justify-center outline-none">
+                                            <div
+                                                className="bg-white rounded-2xl shadow-xl overflow-hidden transition-all border-2 border-transparent hover:border-indigo-600 w-full mx-auto flex flex-col justify-between"
+                                                style={{ width: '100%', maxWidth: '480px', minHeight: '520px' }}
+                                            >                                                
+                                                <div>
+                                                    <div className="relative h-48 sm:h-56 md:h-60 overflow-hidden bg-gray-100">
+                                                        <img
+                                                            alt={fetchedCard.title}
+                                                            src={fetchedCard.image}
+                                                            className="w-full h-full object-cover"
+                                                            onError={(e) => {
+                                                                e.target.onerror = null;
+                                                                e.target.src = defaultImage;
+                                                            }}
+                                                        />
+                                                        <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm px-3 py-1 rounded-full shadow-md">
+                                                            <span className="text-indigo-600 font-semibold capitalize text-xs md:text-sm">{fetchedCard.type}</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="p-5 md:p-6">
+                                                        <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-2 line-clamp-2">{fetchedCard.title}</h2>
+                                                        <p className="text-sm text-gray-600 mb-4 line-clamp-3">
+                                                            {fetchedCard.description}
+                                                        </p>
+
+                                                        <div className="space-y-2 mb-4">
+                                                            <div className="flex items-center gap-2 text-gray-600 text-sm">
+                                                                <MapPin className="w-4 h-4 text-indigo-600 flex-shrink-0" />
+                                                                <span className="truncate">{fetchedCard.location}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-2 text-gray-600 text-sm">
+                                                                <Clock className="w-4 h-4 text-indigo-600 flex-shrink-0" />
+                                                                <span>{fetchedCard.openingHours}</span>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
 
-                                                <div className="p-4 md:p-6">
-                                                    <h2 className="text-lg md:text-xl text-gray-900 mb-3 md:mb-4">{fetchedCard.title}</h2>
-                                                    <p className="text-sm md:text-base text-gray-600 mb-3 md:mb-4 line-clamp-3">
-                                                        {fetchedCard.description}
-                                                    </p>
-
-                                                    <div className="space-y-2 mb-4 md:mb-6">
-                                                        <div className="flex items-center gap-2 text-gray-600 text-sm">
-                                                            <MapPin className="w-4 h-4 text-indigo-600 flex-shrink-0" />
-                                                            <span className="truncate">{fetchedCard.location}</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-2 text-gray-600 text-sm">
-                                                            <Clock className="w-4 h-4 text-indigo-600 flex-shrink-0" />
-                                                            <span>{fetchedCard.openingHours}</span>
-                                                        </div>
-                                                    </div>
-
+                                                <div className="px-5 pb-5 md:px-6 md:pb-6">
                                                     <button
-                                                        className="w-full bg-indigo-600 text-white py-2 px-4 rounded-xl hover:bg-indigo-700 transition text-sm md:text-base"
+                                                        className="w-full bg-indigo-600 text-white py-2.5 px-4 rounded-xl hover:bg-indigo-700 transition font-medium text-sm md:text-base shadow-sm"
                                                         onClick={() => handleViewDetails(fetchedCard)}
                                                     >
                                                         {t('swipeCarousel_viewDetails')}

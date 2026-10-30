@@ -26,7 +26,7 @@ const AuthView = {
 function App() {
     const [currentView, setCurrentView] = useState(AuthView.LOGIN);
     const [user, setUser] = useState(null);
-    const [selectedCity] = useState('Lugano');
+    const [selectedCity, setSelectedCity] = useState('Lugano');
     const { i18n } = useTranslation();
 
 
@@ -104,6 +104,7 @@ function App() {
                 {/* Swipe Carousel - Final step showing recommendations */}
                 {currentView === AuthView.SWIPECAROUSEL && user && (
                     <SwipeCarousel
+                        key={selectedCity}
                         municipality={selectedCity}
                         user={user}
                         onBack={() => setCurrentView(AuthView.START)}
@@ -116,6 +117,12 @@ function App() {
                     <InterestSelection
                         user={user}
                         onBack={() => setCurrentView(AuthView.START)}
+                        onComplete={(chosenCity) => {
+                            if (chosenCity) {
+                                setSelectedCity(chosenCity);
+                            }
+                            setCurrentView(AuthView.SWIPECAROUSEL);
+                        }}
                     />
                 )}
 
