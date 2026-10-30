@@ -36,7 +36,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactDev", policy =>
     {
-        policy.WithOrigins("http://localhost:3000")
+        policy.SetIsOriginAllowed(_ => true) // allows localhost, 127.0.0.1, LAN IP during development
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials(); // important for cookies
