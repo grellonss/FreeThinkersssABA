@@ -156,7 +156,7 @@ export function MapView({
                             type="button"
                             onClick={closeBanner}
                             className="absolute top-3 right-3 z-30 w-9 h-9 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-md flex items-center justify-center shadow-lg transition-transform hover:scale-105 active:scale-95"
-                            aria-label="Chiudi dettaglio"
+                            aria-label={t('carousel_close')}
                         >
                             <X className="w-5 h-5" />
                         </button>
@@ -175,7 +175,7 @@ export function MapView({
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                                 <div className="absolute bottom-3 left-4">
                                     <span className="inline-block px-3 py-1 bg-white/95 dark:bg-gray-800/95 backdrop-blur-md rounded-full text-xs font-bold shadow-sm capitalize text-gray-800 dark:text-gray-200">
-                                        {selectedLocation.type || 'Punto Culturale'}
+                                        {selectedLocation.type || t('carousel_poi')}
                                     </span>
                                 </div>
                             </div>
@@ -185,7 +185,7 @@ export function MapView({
                         <div className="p-5 sm:p-6 overflow-y-auto space-y-4">
                             {!selectedLocation.image && (
                                 <div className="inline-block px-3 py-1 rounded-full text-xs font-bold border mb-2 shadow-2xs" style={{ borderColor: themeColor, color: themeColor }}>
-                                    {selectedLocation.type || 'Punto Culturale'}
+                                    {selectedLocation.type || t('carousel_poi')}
                                 </div>
                             )}
 

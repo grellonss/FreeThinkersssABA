@@ -172,7 +172,7 @@ export function LoginForm({ onLogin, onSwitchToRegister, onSwitchToRecovery }) {
                                 {isLoading ? (
                                     <span className="flex items-center gap-2">
                                         <Sparkles className="w-4 h-4 animate-spin" />
-                                        <span>Caricamento...</span>
+                                        <span>{t('loadingSpinner_loading')}</span>
                                     </span>
                                 ) : (
                                     <>

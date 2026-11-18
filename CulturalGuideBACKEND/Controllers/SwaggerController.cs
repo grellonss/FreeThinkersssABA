@@ -64,9 +64,9 @@ public class EppoiApiController : ControllerBase
     //  MAP ENDPOINT
     // ===============================
     [HttpGet("map")]
-    public async Task<IActionResult> GetMap([FromQuery] string municipality = "Olten")
+    public async Task<IActionResult> GetMap([FromQuery] string municipality = "Olten", [FromQuery] string language = "it")
     {
-        var mapData = await _swaggerEppoiService.GetMapAsync(municipality);
+        var mapData = await _swaggerEppoiService.GetMapAsync(municipality, language);
         return Ok(mapData);
     }
 

@@ -547,7 +547,7 @@ namespace CulturalGuideBACKEND.Services.SwaggerEppoiService
                 {
                     EntityId = c.EntityId,
                     EntityName = c.Title,
-                    BadgeText = c.Category,
+                    BadgeText = BadgeFromPayload(c.JsonPayload) ?? c.Category,
                     Address = c.Address,
                     ImagePath = c.PrimaryImage,
                     Description = c.Description,
@@ -556,6 +556,13 @@ namespace CulturalGuideBACKEND.Services.SwaggerEppoiService
                     Language = c.Language,
                     Municipality = c.Municipality
                 }).ToList();
+
+                // Le card curate vivono nel codice: le rigeneriamo così testi e traduzioni non restano fermi in cache.
+                var fresh = isItalian
+                    ? GetCuratedItalianCards(cleanCity, cityInfo, normalizedCategory, langCode)
+                    : GetCuratedSwissCards(cleanCity, cityInfo, normalizedCategory, langCode);
+                cachedList = cachedList.Select(c => fresh.FirstOrDefault(f => f.EntityId == c.EntityId) ?? c).ToList();
+                await SaveCardsToDbAsync(fresh, cleanCity, normalizedCategory, langCode);
 
                 // Guarantee that even cached items don't have repeating images
                 EnsureUniqueImages(cachedList, isItalian);
@@ -622,6 +629,13 @@ namespace CulturalGuideBACKEND.Services.SwaggerEppoiService
             await SaveCardsToDbAsync(results, cleanCity, normalizedCategory, langCode);
 
             return results;
+        }
+
+        private static string? BadgeFromPayload(string? json)
+        {
+            if (string.IsNullOrWhiteSpace(json)) return null;
+            try { return JsonSerializer.Deserialize<EppoiUnifiedCardDTO>(json)?.BadgeText; }
+            catch (JsonException) { return null; }
         }
 
         private static void EnsureUniqueImages(List<EppoiUnifiedCardDTO> cards, bool isItalian)
@@ -781,9 +795,9 @@ namespace CulturalGuideBACKEND.Services.SwaggerEppoiService
 
                         var categoryLabel = langCode switch
                         {
-                            "de" => "KGS Kulturgut A",
-                            "en" => "Swiss National Heritage",
-                            _ => "Bene Culturale Svizzero"
+                            "de" => "Schweizer Kulturgut",
+                            "en" => "Swiss heritage site",
+                            _ => "Bene culturale svizzero"
                         };
 
                         if (!string.IsNullOrWhiteSpace(label))
@@ -793,7 +807,7 @@ namespace CulturalGuideBACKEND.Services.SwaggerEppoiService
                                 EntityId = $"geo-kgs-{featureId}",
                                 EntityName = label,
                                 BadgeText = $"{categoryLabel} ({kanton})",
-                                Address = !string.IsNullOrWhiteSpace(address) ? $"{address}, {cleanCity} ({kanton})" : $"{cleanCity} ({kanton}), Svizzera",
+                                Address = !string.IsNullOrWhiteSpace(address) ? $"{address}, {cleanCity} ({kanton})" : $"{cleanCity} ({kanton}), {Tr(langCode, "Svizzera", "Switzerland", "Schweiz")}",
                                 ImagePath = image,
                                 Description = desc,
                                 Latitude = lat,
@@ -916,8 +930,8 @@ namespace CulturalGuideBACKEND.Services.SwaggerEppoiService
                     dqElem.TryGetProperty("pages", out var pagesElem))
                 {
                     var isIt = cityInfo.Country == "IT";
-                    var badgePrefix = isIt ? "Italia Cultura" : "Svizzera Turismo";
-                    var countryName = isIt ? "Italia" : "Svizzera";
+                    var badgePrefix = Tr(langCode, "Luoghi", "Places", "Orte");
+                    var countryName = isIt ? Tr(langCode, "Italia", "Italy", "Italien") : Tr(langCode, "Svizzera", "Switzerland", "Schweiz");
 
                     foreach (var prop in pagesElem.EnumerateObject())
                     {
@@ -968,124 +982,107 @@ namespace CulturalGuideBACKEND.Services.SwaggerEppoiService
             return list;
         }
 
+        // Sceglie il testo nella lingua richiesta; lingue non previste ricadono sull'inglese.
+        private static string Tr(string langCode, string it, string en, string de) =>
+            langCode switch { "it" => it, "de" => de, _ => en };
+
         // =====================
         // AUTHENTIC CURATED SWISS SIGHTS PER CATEGORY (ESN Olten Partner)
         // =====================
         private List<EppoiUnifiedCardDTO> GetCuratedSwissCards(string cleanCity, CityLocationInfo city, string category, string langCode)
         {
-            var isIt = langCode == "it";
-            var isDe = langCode == "de";
-
+            string T(string it, string en, string de) => Tr(langCode, it, en, de);
+            var ch = T("Svizzera", "Switzerland", "Schweiz");
+            var slug = cleanCity.ToLowerInvariant();
             var list = new List<EppoiUnifiedCardDTO>();
+
+            EppoiUnifiedCardDTO Card(string id, string name, string badge, string address, string image, string description, double lat, double lon) => new()
+            {
+                EntityId = id, EntityName = name, BadgeText = badge, Address = address, ImagePath = image,
+                Description = description, Latitude = lat, Longitude = lon, Language = langCode, Municipality = cleanCity
+            };
 
             // Olten specific highlights (ESN Olten partner)
             if (cleanCity.Equals("Olten", StringComparison.OrdinalIgnoreCase))
             {
-                list.Add(new EppoiUnifiedCardDTO
-                {
-                    EntityId = "curated-olten-holzbruecke",
-                    EntityName = isIt ? "Alte Holzbrücke (Ponte Storico in Legno)" : "Alte Holzbrücke Olten",
-                    BadgeText = isIt ? "Simbolo Storico di Olten (ESN)" : "Wahrzeichen von Olten",
-                    Address = "Brückengasse, 4600 Olten (SO), Svizzera",
-                    ImagePath = "https://commons.wikimedia.org/wiki/Special:FilePath/Alte%20Br%C3%BCcke%20in%20Olten-20140514.jpg?width=800",
-                    Description = isIt ? "Lo storico ponte in legno coperto sull'Aare, risalente al 1803, punto d'incontro simbolo degli studenti internazionali e di ESN Olten." : "Historic covered wooden bridge over the Aare river, iconic meeting place of international students and ESN Olten.",
-                    Latitude = 47.3512,
-                    Longitude = 7.9048,
-                    Language = langCode,
-                    Municipality = "Olten"
-                });
+                list.Add(Card("curated-olten-holzbruecke",
+                    T("Alte Holzbrücke (ponte storico in legno)", "Alte Holzbrücke (old wooden bridge)", "Alte Holzbrücke Olten"),
+                    T("Simbolo di Olten", "Olten landmark", "Wahrzeichen von Olten"),
+                    $"Brückengasse, 4600 Olten (SO), {ch}",
+                    "https://commons.wikimedia.org/wiki/Special:FilePath/Alte%20Br%C3%BCcke%20in%20Olten-20140514.jpg?width=800",
+                    T("Lo storico ponte in legno coperto sull'Aare, risalente al 1803, punto d'incontro degli studenti internazionali e di ESN Olten.",
+                      "Historic covered wooden bridge over the Aare, built in 1803 and a meeting place for international students and ESN Olten.",
+                      "Die historische gedeckte Holzbrücke über die Aare von 1803, Treffpunkt der internationalen Studierenden und von ESN Olten."),
+                    47.3512, 7.9048));
 
-                list.Add(new EppoiUnifiedCardDTO
-                {
-                    EntityId = "curated-olten-esn-hub",
-                    EntityName = isIt ? "ESN Olten Student & Cultural Hub" : "ESN Olten Student Centre",
-                    BadgeText = "ESN Olten Partner Community",
-                    Address = "Riggenbachstrasse 16, 4600 Olten (FHNW Campus)",
-                    ImagePath = "https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800&auto=format&fit=crop&q=80",
-                    Description = isIt ? "Il cuore pulsante dell'Erasmus Student Network Olten: eventi interculturali, visite guidate del cantone Soletta e scambi linguistici per studenti universitari." : "Hub of Erasmus Student Network Olten: cultural tours, campus events, and intercultural exchanges.",
-                    Latitude = 47.3489,
-                    Longitude = 7.9021,
-                    Language = langCode,
-                    Municipality = "Olten"
-                });
+                list.Add(Card("curated-olten-esn-hub",
+                    T("ESN Olten, punto d'incontro studenti", "ESN Olten student hub", "ESN Olten Studierendentreff"),
+                    "ESN Olten",
+                    "Riggenbachstrasse 16, 4600 Olten (FHNW Campus)",
+                    "https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800&auto=format&fit=crop&q=80",
+                    T("Il punto di riferimento dell'Erasmus Student Network Olten: eventi interculturali, visite nel cantone Soletta e scambi linguistici.",
+                      "The home of Erasmus Student Network Olten: intercultural events, trips around the canton of Solothurn and language exchanges.",
+                      "Der Treffpunkt des Erasmus Student Network Olten: interkulturelle Events, Ausflüge im Kanton Solothurn und Sprachaustausch."),
+                    47.3489, 7.9021));
             }
 
             if (category.Contains("eat") || category.Contains("drink"))
             {
-                list.Add(new EppoiUnifiedCardDTO
-                {
-                    EntityId = $"curated-grotto-{cleanCity.ToLowerInvariant()}",
-                    EntityName = isIt ? $"Grotto & Tradizione {cleanCity}" : (isDe ? $"Traditionelles Stübli {cleanCity}" : $"Traditional Swiss Dining {cleanCity}"),
-                    BadgeText = isIt ? "Cucina Tipica Svizzera" : (isDe ? "Schweizer Spezialitäten" : "Traditional Swiss Cuisine"),
-                    Address = $"Marktgasse, {cleanCity} ({city.ProvinceOrCanton}), Svizzera",
-                    ImagePath = "https://images.unsplash.com/photo-1544025162-d76694265947?w=800&auto=format&fit=crop&q=80",
-                    Description = isIt ? "Autentica esperienza enogastronomica svizzera: polenta nostrana, rösti dorato, formaggi d'alpeggio e vini del territorio elvetico." : "Authentic Swiss culinary experience: golden rösti, alpine cheeses and regional wines.",
-                    Latitude = city.Latitude + 0.002,
-                    Longitude = city.Longitude + 0.003,
-                    Language = langCode,
-                    Municipality = cleanCity
-                });
-                list.Add(new EppoiUnifiedCardDTO
-                {
-                    EntityId = $"curated-fondue-{cleanCity.ToLowerInvariant()}",
-                    EntityName = isIt ? "Chalet del Formaggio & Fondue" : (isDe ? "Chalet Fondue Stübli" : "Swiss Fondue & Raclette Chalet"),
-                    BadgeText = isIt ? "Fondue & Raclette AOP" : "Swiss Cheese Specialties",
-                    Address = $"Bahnhofstrasse, {cleanCity} ({city.ProvinceOrCanton}), Svizzera",
-                    ImagePath = "https://images.unsplash.com/photo-1549007994-cb92caebd54b?w=800&auto=format&fit=crop&q=80",
-                    Description = isIt ? "La vera fondue moitié-moitié con formaggi Gruyère AOP e Vacherin Fribourgeois, accompagnata da patate novelle e vino Fendant." : "Traditional Swiss cheese fondue moitié-moitié with Gruyère AOP and regional specialties.",
-                    Latitude = city.Latitude - 0.002,
-                    Longitude = city.Longitude - 0.001,
-                    Language = langCode,
-                    Municipality = cleanCity
-                });
+                list.Add(Card($"curated-grotto-{slug}",
+                    T($"Grotto & Tradizione {cleanCity}", $"Traditional Swiss Dining {cleanCity}", $"Traditionelles Stübli {cleanCity}"),
+                    T("Cucina tipica svizzera", "Traditional Swiss cuisine", "Schweizer Spezialitäten"),
+                    $"Marktgasse, {cleanCity} ({city.ProvinceOrCanton}), {ch}",
+                    "https://images.unsplash.com/photo-1544025162-d76694265947?w=800&auto=format&fit=crop&q=80",
+                    T("Cucina svizzera tradizionale: rösti dorato, formaggi d'alpeggio e vini del territorio.",
+                      "Traditional Swiss cooking: golden rösti, alpine cheeses and regional wines.",
+                      "Traditionelle Schweizer Küche: goldene Rösti, Alpkäse und Weine aus der Region."),
+                    city.Latitude + 0.002, city.Longitude + 0.003));
+
+                list.Add(Card($"curated-fondue-{slug}",
+                    T("Chalet del Formaggio & Fondue", "Swiss Fondue & Raclette Chalet", "Chalet Fondue Stübli"),
+                    T("Fondue e raclette", "Fondue and raclette", "Fondue und Raclette"),
+                    $"Bahnhofstrasse, {cleanCity} ({city.ProvinceOrCanton}), {ch}",
+                    "https://images.unsplash.com/photo-1549007994-cb92caebd54b?w=800&auto=format&fit=crop&q=80",
+                    T("La fondue moitié-moitié con Gruyère AOP e Vacherin Fribourgeois, servita con patate novelle.",
+                      "Moitié-moitié fondue with Gruyère AOP and Vacherin Fribourgeois, served with new potatoes.",
+                      "Fondue moitié-moitié mit Gruyère AOP und Vacherin Fribourgeois, serviert mit neuen Kartoffeln."),
+                    city.Latitude - 0.002, city.Longitude - 0.001));
             }
             else if (category.Contains("nature"))
             {
-                list.Add(new EppoiUnifiedCardDTO
-                {
-                    EntityId = $"curated-nature-{cleanCity.ToLowerInvariant()}",
-                    EntityName = isIt ? $"Belvedere Panoramico & Sentieri di {cleanCity}" : $"Panoramic Summit & Trail of {cleanCity}",
-                    BadgeText = isIt ? "Natura & Panorama Alpino" : "Alpine Nature & View",
-                    Address = $"{cleanCity} ({city.ProvinceOrCanton}), Svizzera",
-                    ImagePath = "https://images.unsplash.com/photo-1531310197839-ccf54634509e?w=800&auto=format&fit=crop&q=80",
-                    Description = isIt ? "Spettacolare punto panoramico con vista sui rilievi svizzeri, sentieri botanici e aria pura d'alta quota." : "Spectacular panoramic viewpoint with views over the Swiss landscape and nature trails.",
-                    Latitude = city.Latitude + 0.008,
-                    Longitude = city.Longitude + 0.006,
-                    Language = langCode,
-                    Municipality = cleanCity
-                });
+                list.Add(Card($"curated-nature-{slug}",
+                    T($"Belvedere e sentieri di {cleanCity}", $"Viewpoint and trails of {cleanCity}", $"Aussichtspunkt und Wege von {cleanCity}"),
+                    T("Natura e panorama", "Nature and views", "Natur und Aussicht"),
+                    $"{cleanCity} ({city.ProvinceOrCanton}), {ch}",
+                    "https://images.unsplash.com/photo-1531310197839-ccf54634509e?w=800&auto=format&fit=crop&q=80",
+                    T("Punto panoramico con vista sui rilievi svizzeri e sentieri nella natura.",
+                      "Viewpoint over the Swiss hills with nature trails.",
+                      "Aussichtspunkt mit Blick auf die Schweizer Hügel und Naturwege."),
+                    city.Latitude + 0.008, city.Longitude + 0.006));
             }
             else if (category.Contains("typical") || category.Contains("product"))
             {
-                list.Add(new EppoiUnifiedCardDTO
-                {
-                    EntityId = $"curated-chocolate-{cleanCity.ToLowerInvariant()}",
-                    EntityName = isIt ? "Boutique del Cioccolato Svizzero Artigianale" : "Artisanal Swiss Chocolate Atelier",
-                    BadgeText = isIt ? "Cioccolato Svizzero d'Eccellenza" : "Swiss Grand Cru Chocolate",
-                    Address = $"Hauptgasse, {cleanCity} ({city.ProvinceOrCanton}), Svizzera",
-                    ImagePath = "https://images.unsplash.com/photo-1549007994-cb92caebd54b?w=800&auto=format&fit=crop&q=80",
-                    Description = isIt ? "Degustazione di praline artigianali, tavolette monorigine e cioccolato svizzero finissimo lavorato secondo la grande tradizione elvetica." : "Tasting of artisanal pralines, single-origin bars, and world-renowned Swiss chocolate.",
-                    Latitude = city.Latitude + 0.001,
-                    Longitude = city.Longitude + 0.001,
-                    Language = langCode,
-                    Municipality = cleanCity
-                });
+                list.Add(Card($"curated-chocolate-{slug}",
+                    T("Boutique del cioccolato svizzero artigianale", "Artisanal Swiss Chocolate Atelier", "Atelier für Schweizer Schokolade"),
+                    T("Cioccolato svizzero", "Swiss chocolate", "Schweizer Schokolade"),
+                    $"Hauptgasse, {cleanCity} ({city.ProvinceOrCanton}), {ch}",
+                    "https://images.unsplash.com/photo-1549007994-cb92caebd54b?w=800&auto=format&fit=crop&q=80",
+                    T("Degustazione di praline artigianali e tavolette monorigine di cioccolato svizzero.",
+                      "Tasting of handmade pralines and single-origin Swiss chocolate bars.",
+                      "Degustation von handgemachten Pralinen und Schweizer Single-Origin-Schokolade."),
+                    city.Latitude + 0.001, city.Longitude + 0.001));
             }
             else if (category.Contains("route"))
             {
-                list.Add(new EppoiUnifiedCardDTO
-                {
-                    EntityId = $"curated-route-{cleanCity.ToLowerInvariant()}",
-                    EntityName = isIt ? $"Sentiero Panoramico di {cleanCity}" : $"Scenic Trail of {cleanCity}",
-                    BadgeText = isIt ? "Escursionismo & Sentieri Svizzeri" : "Swiss Hiking Trail",
-                    Address = $"{cleanCity} ({city.ProvinceOrCanton}), Percorso Segnalato",
-                    ImagePath = "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&auto=format&fit=crop&q=80",
-                    Description = isIt ? "Itinerario pedonale perfettamente segnalato con cartelli gialli ufficiali di Sentieri Svizzeri, immerso nella natura panoramica." : "Official Swiss hiking path marked with iconic yellow signs, offering scenic mountain views.",
-                    Latitude = city.Latitude + 0.004,
-                    Longitude = city.Longitude - 0.003,
-                    Language = langCode,
-                    Municipality = cleanCity
-                });
+                list.Add(Card($"curated-route-{slug}",
+                    T($"Sentiero panoramico di {cleanCity}", $"Scenic trail of {cleanCity}", $"Panoramaweg {cleanCity}"),
+                    T("Escursioni", "Hiking trail", "Wanderweg"),
+                    $"{cleanCity} ({city.ProvinceOrCanton}), {ch}",
+                    "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&auto=format&fit=crop&q=80",
+                    T("Itinerario a piedi segnalato con i cartelli gialli ufficiali dei sentieri svizzeri.",
+                      "Walking route marked with the official yellow Swiss hiking signs.",
+                      "Wanderroute mit den offiziellen gelben Schweizer Wanderwegweisern."),
+                    city.Latitude + 0.004, city.Longitude - 0.003));
             }
 
             return list;
@@ -1096,135 +1093,111 @@ namespace CulturalGuideBACKEND.Services.SwaggerEppoiService
         // =====================
         private List<EppoiUnifiedCardDTO> GetCuratedItalianCards(string cleanCity, CityLocationInfo city, string category, string langCode)
         {
-            var isIt = langCode == "it";
+            string T(string it, string en, string de) => Tr(langCode, it, en, de);
+            var italy = T("Italia", "Italy", "Italien");
+            var slug = cleanCity.ToLowerInvariant();
             var list = new List<EppoiUnifiedCardDTO>();
+
+            EppoiUnifiedCardDTO Card(string id, string name, string badge, string address, string image, string description, double lat, double lon) => new()
+            {
+                EntityId = id, EntityName = name, BadgeText = badge, Address = address, ImagePath = image,
+                Description = description, Latitude = lat, Longitude = lon, Language = langCode, Municipality = cleanCity
+            };
 
             // Camerino specific highlights (ESN Camerino partner)
             if (cleanCity.Equals("Camerino", StringComparison.OrdinalIgnoreCase))
             {
-                list.Add(new EppoiUnifiedCardDTO
-                {
-                    EntityId = "curated-camerino-rocca-borgesca",
-                    EntityName = isIt ? "Rocca Borgesca di Camerino" : "Borgia Fortress of Camerino",
-                    BadgeText = "Monumento Storico Rinascimentale",
-                    Address = "Piazzale della Rocca, 62032 Camerino (MC), Italia",
-                    ImagePath = "https://commons.wikimedia.org/wiki/Special:FilePath/Camerino_veduta_04.jpg?width=800",
-                    Description = isIt ? "Imponente fortezza rinascimentale del 1503 voluta da Cesare Borgia. Offre uno dei più straordinari belvederi panoramici sui monti Sibillini e giardini pubblici storici." : "Imposing 1503 Renaissance fortress built by Cesare Borgia with sweeping panoramic views of the Sibillini Mountains.",
-                    Latitude = 43.1345,
-                    Longitude = 13.0645,
-                    Language = langCode,
-                    Municipality = "Camerino"
-                });
+                list.Add(Card("curated-camerino-rocca-borgesca",
+                    T("Rocca Borgesca di Camerino", "Rocca Borgesca (Borgia Fortress)", "Rocca Borgesca (Borgia-Festung)"),
+                    T("Monumento rinascimentale", "Renaissance monument", "Renaissance-Denkmal"),
+                    $"Piazzale della Rocca, 62032 Camerino (MC), {italy}",
+                    "https://commons.wikimedia.org/wiki/Special:FilePath/Camerino_veduta_04.jpg?width=800",
+                    T("Fortezza rinascimentale del 1503 voluta da Cesare Borgia, con giardini pubblici e un belvedere sui Monti Sibillini.",
+                      "Renaissance fortress built in 1503 for Cesare Borgia, with public gardens and views of the Sibillini Mountains.",
+                      "Renaissance-Festung von 1503, erbaut für Cesare Borgia, mit öffentlichem Park und Blick auf die Sibillinischen Berge."),
+                    43.1345, 13.0645));
 
-                list.Add(new EppoiUnifiedCardDTO
-                {
-                    EntityId = "curated-camerino-palazzo-ducale",
-                    EntityName = isIt ? "Palazzo Ducale dei Da Varano & Polo Museale" : "Ducal Palace of the Da Varano",
-                    BadgeText = "Patrimonio Storico & Culturale",
-                    Address = "Piazza Cavour, 62032 Camerino (MC), Italia",
-                    ImagePath = "https://images.unsplash.com/photo-1548625361-19597282b0f4?w=800&auto=format&fit=crop&q=80",
-                    Description = isIt ? "Sede della celebre signoria dei Da Varano e dell'Università di Camerino (UNICAM), fondata nel 1336. Magnifico cortile rinascimentale quadriporticato." : "Historic seat of the Da Varano dukes and University of Camerino (founded 1336) with Renaissance cloister.",
-                    Latitude = 43.1358,
-                    Longitude = 13.0679,
-                    Language = langCode,
-                    Municipality = "Camerino"
-                });
+                list.Add(Card("curated-camerino-palazzo-ducale",
+                    T("Palazzo Ducale dei Da Varano", "Ducal Palace of the Da Varano", "Herzogspalast der Da Varano"),
+                    T("Patrimonio storico", "Historic heritage", "Historisches Erbe"),
+                    $"Piazza Cavour, 62032 Camerino (MC), {italy}",
+                    "https://images.unsplash.com/photo-1548625361-19597282b0f4?w=800&auto=format&fit=crop&q=80",
+                    T("Sede della signoria dei Da Varano e dell'Università di Camerino (UNICAM), fondata nel 1336, con cortile rinascimentale porticato.",
+                      "Seat of the Da Varano dukes and of the University of Camerino (UNICAM), founded in 1336, with a Renaissance arcaded courtyard.",
+                      "Sitz der Herzöge Da Varano und der 1336 gegründeten Universität Camerino (UNICAM), mit Renaissance-Arkadenhof."),
+                    43.1358, 13.0679));
 
-                list.Add(new EppoiUnifiedCardDTO
-                {
-                    EntityId = "curated-camerino-orto-botanico",
-                    EntityName = isIt ? "Orto Botanico Carmela Cortini (UNICAM)" : "UNICAM Botanical Gardens",
-                    BadgeText = "Natura & Scienza Universitaria",
-                    Address = "Viale Pieragostini 1, 62032 Camerino (MC), Italia",
-                    ImagePath = "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&auto=format&fit=crop&q=80",
-                    Description = isIt ? "Fondato nel 1828 presso le antiche mura ducali, conserva oltre 1000 specie botaniche dell'Appennino centrale e serre secolari gestite dall'Università di Camerino." : "Historic botanical garden founded in 1828 by the University of Camerino, featuring rare Apennine flora.",
-                    Latitude = 43.1372,
-                    Longitude = 13.0695,
-                    Language = langCode,
-                    Municipality = "Camerino"
-                });
+                list.Add(Card("curated-camerino-orto-botanico",
+                    T("Orto Botanico Carmela Cortini (UNICAM)", "UNICAM Botanical Garden", "Botanischer Garten der UNICAM"),
+                    T("Natura e scienza", "Nature and science", "Natur und Wissenschaft"),
+                    $"Viale Pieragostini 1, 62032 Camerino (MC), {italy}",
+                    "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&auto=format&fit=crop&q=80",
+                    T("Fondato nel 1828 sotto le mura ducali, conserva oltre 1000 specie dell'Appennino centrale ed è gestito dall'Università di Camerino.",
+                      "Founded in 1828 below the ducal walls, it holds over 1,000 species from the central Apennines and is run by the University of Camerino.",
+                      "1828 unterhalb der Herzogsmauern gegründet, mit über 1000 Arten aus dem zentralen Apennin, betrieben von der Universität Camerino."),
+                    43.1372, 13.0695));
 
-                list.Add(new EppoiUnifiedCardDTO
-                {
-                    EntityId = "curated-camerino-esn-hub",
-                    EntityName = isIt ? "ESN Camerino Student Community Hub" : "ESN Camerino Student Hub",
-                    BadgeText = "ESN Camerino Partner Community",
-                    Address = "Campus Universitario UNICAM, 62032 Camerino (MC), Italia",
-                    ImagePath = "https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800&auto=format&fit=crop&q=80",
-                    Description = isIt ? "Punto di riferimento per gli studenti Erasmus e internazionali di Camerino: escursioni sui Sibillini, feste culturali e supporto all'integrazione accademica." : "Student community hub by Erasmus Student Network Camerino: cultural excursions, events, and student support.",
-                    Latitude = 43.1360,
-                    Longitude = 13.0670,
-                    Language = langCode,
-                    Municipality = "Camerino"
-                });
+                list.Add(Card("curated-camerino-esn-hub",
+                    T("ESN Camerino, punto d'incontro studenti", "ESN Camerino student hub", "ESN Camerino Studierendentreff"),
+                    "ESN Camerino",
+                    $"Campus Universitario UNICAM, 62032 Camerino (MC), {italy}",
+                    "https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800&auto=format&fit=crop&q=80",
+                    T("Punto di riferimento per gli studenti Erasmus e internazionali: escursioni sui Sibillini, eventi e supporto all'arrivo.",
+                      "The reference point for Erasmus and international students: trips to the Sibillini, events and help when you arrive.",
+                      "Anlaufstelle für Erasmus- und internationale Studierende: Ausflüge in die Sibillinischen Berge, Events und Hilfe bei der Ankunft."),
+                    43.1360, 13.0670));
             }
 
             // Massignano specific highlights (original Eppoi Marche partner)
             if (cleanCity.Equals("Massignano", StringComparison.OrdinalIgnoreCase))
             {
-                list.Add(new EppoiUnifiedCardDTO
-                {
-                    EntityId = "curated-massignano-fischietti",
-                    EntityName = isIt ? "Museo dei Fischietti di Terracotta" : "Terracotta Whistle Museum",
-                    BadgeText = "Tradizione Artigianale Marchigiana",
-                    Address = "Piazza Garibaldi, 63061 Massignano (AP), Italia",
-                    ImagePath = "https://images.unsplash.com/photo-1533105079780-92b9be482077?w=800&auto=format&fit=crop&q=80",
-                    Description = isIt ? "Celebre museo unico in Italia dedicato all'antica arte dei 'fischiettai' di terracotta di Massignano, con collezioni storiche e botteghe tradizionali." : "Unique Italian museum celebrating the historic terracotta whistling artisans of Massignano.",
-                    Latitude = 43.0520,
-                    Longitude = 13.7975,
-                    Language = langCode,
-                    Municipality = "Massignano"
-                });
+                list.Add(Card("curated-massignano-fischietti",
+                    T("Museo dei Fischietti di Terracotta", "Terracotta Whistle Museum", "Museum der Terrakotta-Pfeifen"),
+                    T("Artigianato marchigiano", "Marche craftsmanship", "Handwerk der Marken"),
+                    $"Piazza Garibaldi, 63061 Massignano (AP), {italy}",
+                    "https://images.unsplash.com/photo-1533105079780-92b9be482077?w=800&auto=format&fit=crop&q=80",
+                    T("Museo dedicato all'antica arte dei fischietti di terracotta di Massignano, con collezioni storiche.",
+                      "Museum dedicated to Massignano's old craft of terracotta whistles, with historic collections.",
+                      "Museum zum alten Handwerk der Terrakotta-Pfeifen von Massignano, mit historischen Sammlungen."),
+                    43.0520, 13.7975));
             }
 
             // General Italian / Marche categories
             if (category.Contains("eat") || category.Contains("drink"))
             {
-                list.Add(new EppoiUnifiedCardDTO
-                {
-                    EntityId = $"curated-osteria-{cleanCity.ToLowerInvariant()}",
-                    EntityName = isIt ? $"Osteria Tipica Marchigiana {cleanCity}" : $"Traditional Marche Osteria {cleanCity}",
-                    BadgeText = isIt ? "Cucina Tipica Marchigiana" : "Marche Regional Food",
-                    Address = $"Centro Storico, {cleanCity} ({city.ProvinceOrCanton}), Italia",
-                    ImagePath = "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&auto=format&fit=crop&q=80",
-                    Description = isIt ? "I sapori autentici delle Marche: vincisgrassi tradizionali al forno, ciauscolo IGP spalmabile, tagliatelle al tartufo e vino Vernaccia di Serrapetrona DOCG." : "Authentic Marche gastronomy: homemade vincisgrassi lasagna, ciauscolo salami, and local DOCG wines.",
-                    Latitude = city.Latitude + 0.001,
-                    Longitude = city.Longitude + 0.002,
-                    Language = langCode,
-                    Municipality = cleanCity
-                });
+                list.Add(Card($"curated-osteria-{slug}",
+                    T($"Osteria tipica marchigiana {cleanCity}", $"Traditional Marche Osteria {cleanCity}", $"Traditionelle Osteria {cleanCity}"),
+                    T("Cucina marchigiana", "Marche regional food", "Küche der Marken"),
+                    $"Centro Storico, {cleanCity} ({city.ProvinceOrCanton}), {italy}",
+                    "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&auto=format&fit=crop&q=80",
+                    T("I sapori delle Marche: vincisgrassi al forno, ciauscolo IGP, tagliatelle al tartufo e Vernaccia di Serrapetrona DOCG.",
+                      "Flavours of the Marche: baked vincisgrassi, ciauscolo salami, truffle tagliatelle and Vernaccia di Serrapetrona DOCG wine.",
+                      "Aromen der Marken: Vincisgrassi aus dem Ofen, Ciauscolo-Salami, Trüffel-Tagliatelle und Vernaccia di Serrapetrona DOCG."),
+                    city.Latitude + 0.001, city.Longitude + 0.002));
             }
             else if (category.Contains("typical") || category.Contains("product"))
             {
-                list.Add(new EppoiUnifiedCardDTO
-                {
-                    EntityId = $"curated-ciauscolo-{cleanCity.ToLowerInvariant()}",
-                    EntityName = isIt ? "Bottega delle Eccellenze Marchigiane & Ciauscolo IGP" : "Marche Artisanal Food Atelier",
-                    BadgeText = isIt ? "Eccellenze Gastronomiche IGP" : "Artisanal Marche Specialties",
-                    Address = $"Corso Vittorio Emanuele, {cleanCity} ({city.ProvinceOrCanton}), Italia",
-                    ImagePath = "https://images.unsplash.com/photo-1544025162-d76694265947?w=800&auto=format&fit=crop&q=80",
-                    Description = isIt ? "Selezione delle migliori specialità marchigiane: ciauscolo IGP, formaggio di fossa dei Sibillini, olive all'ascolana e miele millefiori dei monti appenninici." : "Tasting of top Marche specialties: ciauscolo IGP salami, pit cheese, and Apennine honeys.",
-                    Latitude = city.Latitude - 0.001,
-                    Longitude = city.Longitude - 0.001,
-                    Language = langCode,
-                    Municipality = cleanCity
-                });
+                list.Add(Card($"curated-ciauscolo-{slug}",
+                    T("Bottega delle eccellenze marchigiane", "Marche speciality food shop", "Spezialitätenladen der Marken"),
+                    T("Prodotti tipici", "Local specialities", "Lokale Spezialitäten"),
+                    $"Corso Vittorio Emanuele, {cleanCity} ({city.ProvinceOrCanton}), {italy}",
+                    "https://images.unsplash.com/photo-1544025162-d76694265947?w=800&auto=format&fit=crop&q=80",
+                    T("Specialità marchigiane: ciauscolo IGP, formaggio di fossa, olive all'ascolana e miele dell'Appennino.",
+                      "Marche specialities: ciauscolo salami, pit-aged cheese, stuffed Ascoli olives and Apennine honey.",
+                      "Spezialitäten der Marken: Ciauscolo-Salami, Grubenkäse, gefüllte Oliven aus Ascoli und Honig aus dem Apennin."),
+                    city.Latitude - 0.001, city.Longitude - 0.001));
             }
             else if (category.Contains("nature"))
             {
-                list.Add(new EppoiUnifiedCardDTO
-                {
-                    EntityId = $"curated-nature-it-{cleanCity.ToLowerInvariant()}",
-                    EntityName = isIt ? $"Sentieri dei Monti Sibillini & Colline di {cleanCity}" : $"Sibillini Nature Trail near {cleanCity}",
-                    BadgeText = isIt ? "Natura & Parchi Marchigiani" : "Nature & Hills of Marche",
-                    Address = $"{cleanCity} ({city.ProvinceOrCanton}), Italia",
-                    ImagePath = "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&auto=format&fit=crop&q=80",
-                    Description = isIt ? "Incantevoli percorsi naturalistici tra colline ondulate e vette appenniniche con vista verso il mare Adriatico e i monti azzurri." : "Scenic nature trails through Marche rolling hills and panoramic Apennine views.",
-                    Latitude = city.Latitude + 0.005,
-                    Longitude = city.Longitude + 0.005,
-                    Language = langCode,
-                    Municipality = cleanCity
-                });
+                list.Add(Card($"curated-nature-it-{slug}",
+                    T($"Sentieri dei Monti Sibillini vicino a {cleanCity}", $"Sibillini nature trails near {cleanCity}", $"Wanderwege der Sibillinischen Berge bei {cleanCity}"),
+                    T("Natura e colline", "Nature and hills", "Natur und Hügel"),
+                    $"{cleanCity} ({city.ProvinceOrCanton}), {italy}",
+                    "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&auto=format&fit=crop&q=80",
+                    T("Percorsi nella natura tra le colline marchigiane e le vette dell'Appennino.",
+                      "Nature trails through the rolling Marche hills with views of the Apennine peaks.",
+                      "Naturwege durch die Hügel der Marken mit Blick auf die Gipfel des Apennins."),
+                    city.Latitude + 0.005, city.Longitude + 0.005));
             }
 
             return list;
@@ -1242,12 +1215,24 @@ namespace CulturalGuideBACKEND.Services.SwaggerEppoiService
                 {
                     var entityId = c.EntityId ?? Guid.NewGuid().ToString();
 
-                    bool exists = await _db.CardItemDetails.AnyAsync(x =>
+                    var existing = await _db.CardItemDetails.FirstOrDefaultAsync(x =>
                         x.EntityId == entityId &&
                         x.Language == langCode &&
                         x.Municipality == cleanCity);
 
-                    if (!exists)
+                    if (existing != null)
+                    {
+                        var payload = JsonSerializer.Serialize(c);
+                        if (existing.JsonPayload != payload)
+                        {
+                            existing.Title = c.EntityName ?? existing.Title;
+                            existing.Description = c.Description ?? c.BadgeText;
+                            existing.Address = c.Address ?? existing.Address;
+                            existing.JsonPayload = payload;
+                            savedCount++;
+                        }
+                    }
+                    else
                     {
                         var detail = new CardItemDetail
                         {
@@ -1314,8 +1299,9 @@ namespace CulturalGuideBACKEND.Services.SwaggerEppoiService
         // =====================
         // MAP MARKERS FOR MUNICIPALITY
         // =====================
-        public async Task<object?> GetMapAsync(string municipality)
+        public async Task<object?> GetMapAsync(string municipality, string language = "it")
         {
+            var langCode = language?.ToLowerInvariant() is { Length: >= 2 } l ? l[..2] : "it";
             var cleanCity = CleanMunicipality(municipality);
             var cityInfo = ResolveCity(cleanCity);
 
@@ -1332,19 +1318,22 @@ namespace CulturalGuideBACKEND.Services.SwaggerEppoiService
                     cards = await _db.CardItemDetails.Where(c => c.Municipality == cleanCity).ToListAsync();
                 }
 
+                // Una riga per luogo: prima la lingua richiesta, poi quello che c'è in cache.
                 var markers = cards
                     .Where(c => c.Latitude.HasValue && c.Longitude.HasValue)
+                    .GroupBy(c => c.EntityId)
+                    .Select(g => g.OrderByDescending(c => c.Language == langCode).First())
                     .Select(c => new
                     {
                         id = c.EntityId,
                         title = c.Title,
-                        type = c.Category,
+                        type = BadgeFromPayload(c.JsonPayload) ?? c.Category,
                         latitude = c.Latitude,
                         longitude = c.Longitude,
                         location = c.Address,
                         description = c.Description,
                         image = c.PrimaryImage,
-                        openingHours = "Tutti i giorni 09:00 - 18:00"
+                        openingHours = (string?)null
                     })
                     .ToList();
 
@@ -1403,8 +1392,8 @@ namespace CulturalGuideBACKEND.Services.SwaggerEppoiService
                     PrimaryImage = dbDetail.PrimaryImage,
                     Latitude = dbDetail.Latitude,
                     Longitude = dbDetail.Longitude,
-                    OpeningHours = "09:00 - 18:00",
-                    Prices = "Ingresso gratuito o tariffa standard musei"
+                    OpeningHours = null,
+                    Prices = null
                 };
             }
 

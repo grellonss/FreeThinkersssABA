@@ -18,6 +18,7 @@ import {
     Compass
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 import { handleImageFallback } from '../services/imageResolver';
 import { fetchEatAndDrinks } from "../services/EatAndDrinksService";
 import { fetchArtAndCulture } from "../services/ArtAndCultureService";
@@ -44,7 +45,7 @@ const NextArrow = ({ onClick, isItalian }) => (
     <button
         onClick={onClick}
         type="button"
-        aria-label="Prossima card"
+        aria-label={i18n.t('carousel_next')}
         className={`absolute right-2 md:right-6 top-1/2 -translate-y-1/2 z-30 w-12 h-12 rounded-full shadow-2xl flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border border-gray-200 dark:border-gray-700 ${
             isItalian ? "text-emerald-800 dark:text-emerald-300 hover:border-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/60" : "text-red-800 dark:text-red-300 hover:border-red-700 hover:bg-red-50 dark:hover:bg-red-950/60"
         }`}
@@ -57,7 +58,7 @@ const PrevArrow = ({ onClick, isItalian }) => (
     <button
         onClick={onClick}
         type="button"
-        aria-label="Card precedente"
+        aria-label={i18n.t('carousel_prev')}
         className={`absolute left-2 md:left-6 top-1/2 -translate-y-1/2 z-30 w-12 h-12 rounded-full shadow-2xl flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border border-gray-200 dark:border-gray-700 ${
             isItalian ? "text-emerald-800 dark:text-emerald-300 hover:border-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/60" : "text-red-800 dark:text-red-300 hover:border-red-700 hover:bg-red-50 dark:hover:bg-red-950/60"
         }`}
@@ -82,18 +83,18 @@ const ALL_CATEGORIES = [
 ];
 
 const CATEGORY_META = {
-    artculture: { label: "Arte & Cultura", icon: "🏛️" },
-    eatanddrink: { label: "Enogastronomia", icon: "🍷" },
-    nature: { label: "Natura & Parchi", icon: "🌲" },
-    routes: { label: "Itinerari & Escursioni", icon: "🥾" },
-    events: { label: "Eventi & Folklore", icon: "🎭" },
-    typicalproducts: { label: "Prodotti Tipici", icon: "🧀" },
-    shopping: { label: "Shopping & Botteghe", icon: "🛍️" },
-    entertainmentleisure: { label: "Intrattenimento & Svago", icon: "🎡" },
-    sleep: { label: "Ospitalità & Soggiorno", icon: "🏨" },
-    articles: { label: "Guide & Articoli", icon: "📰" },
-    organizations: { label: "Associazioni & Campus", icon: "🤝" },
-    services: { label: "Servizi Utili", icon: "ℹ️" },
+    artculture: { icon: "🏛️" },
+    eatanddrink: { icon: "🍷" },
+    nature: { icon: "🌲" },
+    routes: { icon: "🥾" },
+    events: { icon: "🎭" },
+    typicalproducts: { icon: "🧀" },
+    shopping: { icon: "🛍️" },
+    entertainmentleisure: { icon: "🎡" },
+    sleep: { icon: "🏨" },
+    articles: { icon: "📰" },
+    organizations: { icon: "🤝" },
+    services: { icon: "ℹ️" },
 };
 
 export function SwipeCarousel({
@@ -283,9 +284,8 @@ export function SwipeCarousel({
                             if (!fn) return { service: serviceName, data: [] };
 
                             if (filteredEndpointNames.includes(serviceName)) {
-                                const data = fn.length >= 2
-                                    ? await fn(municipalityToUse, effectiveLang)
-                                    : await fn(municipalityToUse);
+                                // fn.length non conta i parametri con default: prima la lingua non veniva mai passata
+                                const data = await fn(municipalityToUse, effectiveLang);
                                 return { service: serviceName, data: data || [] };
                             }
                             return { service: serviceName, data: [] };
@@ -298,12 +298,12 @@ export function SwipeCarousel({
 
                 const normalizeItem = (item, source, index) => ({
                     id: item.id ?? item.entityId ?? item._id ?? `${source}_${index}`,
-                    title: item.title ?? item.entityName ?? item.name ?? item.nome ?? "Punto Culturale",
+                    title: item.title ?? item.entityName ?? item.name ?? item.nome ?? t('carousel_poi'),
                     description: item.description ?? item.descr ?? item.badgeText ?? null,
                     location: item.location ?? item.address ?? item.vicinity ?? displayCity,
                     image: item.image ?? item.imagePath ?? item.imageUrl ?? null,
                     type: item.type ?? item.category ?? source.replace(/^fetch/, '').toLowerCase(),
-                    openingHours: item.openingHours ?? item.hours ?? (isItalian ? "Aperto tutti i giorni" : "Täglich geöffnet"),
+                    openingHours: item.openingHours ?? item.hours ?? null,
                     _raw: item,
                 });
 
@@ -313,11 +313,13 @@ export function SwipeCarousel({
                     return arr.map((item, index) => normalizeItem(item, service, index));
                 });
 
-                setFetchedCardList(combined);
+                // Ogni categoria restituisce anche le card di base della città: teniamo la prima occorrenza di ogni id.
+                const seen = new Set();
+                setFetchedCardList(combined.filter((card) => !seen.has(card.id) && seen.add(card.id)));
 
             } catch (err) {
                 console.error("Error loading POI data:", err);
-                setError(err.message || "Errore nel caricamento delle raccomandazioni");
+                setError(t('carousel_error'));
             } finally {
                 setLoading(false);
             }
@@ -331,9 +333,10 @@ export function SwipeCarousel({
         if (!displayCity) return;
         const loadMarkersOnMap = async () => {
             try {
-                const data = await fetchMap(displayCity);
+                const data = await fetchMap(displayCity, effectiveLang);
                 if (data?.locations && data.locations.length > 0) {
-                    setMarkers(data.locations);
+                    const seen = new Set();
+                    setMarkers(data.locations.filter((m) => !seen.has(m.id) && seen.add(m.id)));
                 }
                 if (data?.center?.latitude != null && data?.center?.longitude != null) {
                     setCenterLatitude(data.center.latitude);
@@ -344,7 +347,7 @@ export function SwipeCarousel({
             }
         };
         loadMarkersOnMap();
-    }, [displayCity]);
+    }, [displayCity, effectiveLang]);
 
     const onTogglePreferences = () => {
         setShowAllCategories((prev) => !prev);
@@ -375,7 +378,7 @@ export function SwipeCarousel({
     const selectedCatKeys = (profileVector && profileVector.selectedCategories) || [];
     const categoriesList = selectedCatKeys.map(key => ({
         id: key,
-        label: CATEGORY_META[key]?.label || key,
+        label: t(`cat_${key}`, key),
         icon: CATEGORY_META[key]?.icon || "🏷️"
     }));
 
@@ -453,7 +456,7 @@ export function SwipeCarousel({
                             <div className="space-y-3 flex-1">
                                 <div className="flex flex-wrap items-center gap-2">
                                     <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold shadow-2xs border ${themeBadgeClass}`}>
-                                        <span>{isItalian ? "🇮🇹 Italia • Partner ESN Camerino" : "🇨🇭 Svizzera • Partner ESN Olten"}</span>
+                                        <span>{isItalian ? "🇮🇹" : "🇨🇭"} {isItalian ? t('country_italy') : t('country_switzerland')} • {isItalian ? "ESN Camerino" : "ESN Olten"}</span>
                                     </span>
                                     <span className="text-xs text-gray-400 dark:text-gray-400 font-medium">• {t('carousel_active_prefs', 'Le tue preferenze attive')}</span>
                                 </div>
@@ -478,7 +481,7 @@ export function SwipeCarousel({
 
                                     <div className="inline-flex items-center gap-1.5 bg-slate-50 dark:bg-gray-800 border border-slate-200/80 dark:border-gray-700 px-3 py-1.5 rounded-xl text-gray-700 dark:text-gray-300 font-medium">
                                         <Globe className={`w-3.5 h-3.5 ${themeHighlightText} flex-shrink-0`} />
-                                        <span>Lingua: <strong className="uppercase">{effectiveLang}</strong></span>
+                                        <span>{t('carousel_language')}: <strong className="uppercase">{effectiveLang}</strong></span>
                                     </div>
                                 </div>
 
@@ -505,7 +508,7 @@ export function SwipeCarousel({
                                     type="button"
                                     onClick={onNavigateToPreferences}
                                     className={`inline-flex items-center justify-center gap-2 px-5 py-3 text-white font-bold text-xs rounded-2xl shadow-md transition-all duration-200 active:scale-95 ${themeBgBtn}`}
-                                    title="Modifica il tuo profilo, date e categorie"
+                                    title={t('carousel_edit_prefs')}
                                 >
                                     <Edit3 className="w-4 h-4" />
                                     <span>{t('carousel_edit_prefs', 'Modifica Preferenze')}</span>
@@ -638,7 +641,7 @@ export function SwipeCarousel({
                                                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-70" />
                                                     <div className="absolute top-3.5 right-3.5 bg-white/95 dark:bg-gray-900/90 backdrop-blur-md px-3 py-1 rounded-full shadow-sm border border-white/60 dark:border-gray-700">
                                                         <span className={`font-bold capitalize text-xs tracking-wide ${themeHighlightText}`}>
-                                                            {CATEGORY_META[fetchedCard.type]?.label || fetchedCard.type}
+                                                            {t(`cat_${String(fetchedCard.type).replace(/-/g, '')}`, fetchedCard.type)}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -649,7 +652,7 @@ export function SwipeCarousel({
                                                         {fetchedCard.title}
                                                     </h3>
                                                     <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mb-4 line-clamp-3 leading-relaxed">
-                                                        {fetchedCard.description || "Nessuna descrizione disponibile per questo punto di interesse."}
+                                                        {fetchedCard.description || t('details_noDescription')}
                                                     </p>
 
                                                     <div className="space-y-2 pt-2 text-xs text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-800">
@@ -692,9 +695,9 @@ export function SwipeCarousel({
                 {!loading && !error && fetchedCardList.length === 0 && (
                     <div className="max-w-2xl mx-auto text-center py-20 bg-white/70 rounded-3xl border border-dashed border-gray-200 my-8 px-4">
                         <Tag className="w-10 h-10 text-gray-400 mx-auto mb-3" />
-                        <h3 className="text-base font-bold text-gray-800">Nessuna raccomandazione trovata</h3>
+                        <h3 className="text-base font-bold text-gray-800">{t('carousel_empty_title')}</h3>
                         <p className="text-xs text-gray-500 max-w-sm mx-auto mt-1 mb-4">
-                            Non abbiamo trovato card per i criteri attuali a {displayCity}. Prova ad ampliare le categorie.
+                            {t('carousel_empty_desc', { city: displayCity })}
                         </p>
                         <button
                             type="button"
@@ -722,7 +725,7 @@ export function SwipeCarousel({
                                 </p>
                             </div>
                             <span className={`text-xs font-bold px-3 py-1 rounded-full border shadow-2xs ${themeBadgeClass}`}>
-                                {markers.length > 0 ? `${markers.length} POI mappati` : 'Caricamento punti mappa...'}
+                                {markers.length > 0 ? t('carousel_map_count', { n: markers.length }) : t('loadingSpinner_loading')}
                             </span>
                         </div>
 
