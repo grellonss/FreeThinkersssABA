@@ -5,7 +5,7 @@ import { API_BASE_URL, cleanMunicipalityName } from "./apiUtils";
  * Recupera i marker della mappa per il comune svizzero o italiano selezionato.
  * @param {string} municipality - Il nome della destinazione (es. "Olten" o "Camerino")
  */
-export const fetchMap = async (municipality) => {
+export const fetchMap = async (municipality, language = "it") => {
     if (!municipality) {
         return {
             locations: [],
@@ -17,7 +17,7 @@ export const fetchMap = async (municipality) => {
     const country = localStorage.getItem("cultural_guide_country") || "CH";
 
     try {
-        const url = `${API_BASE_URL}/map?municipality=${encodeURIComponent(cleanCity)}&country=${encodeURIComponent(country)}`;
+        const url = `${API_BASE_URL}/map?municipality=${encodeURIComponent(cleanCity)}&country=${encodeURIComponent(country)}&language=${encodeURIComponent(language)}`;
 
         const response = await fetch(url, {
             method: "GET",
@@ -58,7 +58,7 @@ export const fetchMap = async (municipality) => {
                 image: authenticImg,
                 description: item.description || item.badgeText || "Destinazione culturale",
                 location: item.address || item.location || `${cleanCity}, ${country === "IT" ? "Italia" : "Svizzera"}`,
-                openingHours: item.openingHours || "09:00 - 18:00"
+                openingHours: item.openingHours || null
             };
         });
 

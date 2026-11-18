@@ -56,7 +56,7 @@ export const fetchCategoryCards = async (endpoint, municipality, language = "it"
                 title: title,
                 description: item.description || item.badgeText || "",
                 location: item.address || item.location || `${cleanCity}`,
-                openingHours: item.openingHours || "Tutti i giorni 09:00 - 18:00",
+                openingHours: item.openingHours || null,
                 latitude: item.latitude ?? null,
                 longitude: item.longitude ?? null,
             };

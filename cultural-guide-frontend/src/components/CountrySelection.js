@@ -46,7 +46,7 @@ export function CountrySelection({ onSelectCountry }) {
                             <div className="relative h-52 sm:h-56 md:h-64 overflow-hidden bg-gray-100 dark:bg-gray-800">
                                 <img
                                     src="https://commons.wikimedia.org/wiki/Special:FilePath/Alte%20Br%C3%BCcke%20in%20Olten-20140514.jpg?width=900"
-                                    alt="Alte Holzbrücke ad Olten, Svizzera"
+                                    alt=""
                                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                                     loading="eager"
                                 />
@@ -79,15 +79,15 @@ export function CountrySelection({ onSelectCountry }) {
                                 <div className="space-y-1.5 text-xs text-gray-700 dark:text-gray-300 font-medium">
                                     <div className="flex items-center gap-2">
                                         <MapPin className="w-3.5 h-3.5 text-red-800 dark:text-red-400 flex-shrink-0" />
-                                        <span className="truncate"><strong>Destinazioni:</strong> Olten, Lugano, Zurigo, Berna, Lucerna</span>
+                                        <span className="truncate"><strong>{t('country_dest_label')}:</strong> {t('country_ch_dest')}</span>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <GraduationCap className="w-3.5 h-3.5 text-red-800 dark:text-red-400 flex-shrink-0" />
-                                        <span className="truncate"><strong>Community:</strong> Studenti universitari FHNW & eventi ESN Olten</span>
+                                        <span className="truncate"><strong>Community:</strong> {t('country_ch_community')}</span>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <Sparkles className="w-3.5 h-3.5 text-red-800 dark:text-red-400 flex-shrink-0" />
-                                        <span className="truncate"><strong>Beni:</strong> KGS Kulturgüter, fondue & sentieri alpini</span>
+                                        <span className="truncate"><strong>{t('country_assets_label')}:</strong> {t('country_ch_assets')}</span>
                                     </div>
                                 </div>
                             </div>
@@ -115,7 +115,7 @@ export function CountrySelection({ onSelectCountry }) {
                             <div className="relative h-52 sm:h-56 md:h-64 overflow-hidden bg-gray-100 dark:bg-gray-800">
                                 <img
                                     src="https://commons.wikimedia.org/wiki/Special:FilePath/Camerino_veduta_04.jpg?width=900"
-                                    alt="Panorama ducale di Camerino, Marche, Italia"
+                                    alt=""
                                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                                     loading="eager"
                                 />
@@ -148,15 +148,15 @@ export function CountrySelection({ onSelectCountry }) {
                                 <div className="space-y-1.5 text-xs text-gray-700 dark:text-gray-300 font-medium">
                                     <div className="flex items-center gap-2">
                                         <MapPin className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400 flex-shrink-0" />
-                                        <span className="truncate"><strong>Destinazioni:</strong> Camerino, Urbino, Ascoli Piceno, Macerata, Jesi</span>
+                                        <span className="truncate"><strong>{t('country_dest_label')}:</strong> Camerino, Urbino, Ascoli Piceno, Macerata, Jesi</span>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <GraduationCap className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400 flex-shrink-0" />
-                                        <span className="truncate"><strong>Community:</strong> UNICAM & Erasmus Student Network Camerino</span>
+                                        <span className="truncate"><strong>Community:</strong> {t('country_it_community')}</span>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <Sparkles className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400 flex-shrink-0" />
-                                        <span className="truncate"><strong>Beni:</strong> Rocca Borgesca, Monti Sibillini, borghi e cucina</span>
+                                        <span className="truncate"><strong>{t('country_assets_label')}:</strong> {t('country_it_assets')}</span>
                                     </div>
                                 </div>
                             </div>

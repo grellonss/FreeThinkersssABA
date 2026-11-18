@@ -7,6 +7,8 @@ import { ProfilePreferences } from "./components/ProfilePreferences";
 import { Dashboard } from "./components/Dashboard";
 import { SwipeCarousel } from "./components/SwipeCarousel";
 import { Chatbot } from "./components/Chatbot";
+import { Transport } from "./components/Transport";
+import { Arrival } from "./components/Arrival";
 import { useTranslation } from "react-i18next";
 import { Header } from "./components/Header";
 
@@ -19,6 +21,8 @@ export const AuthView = {
     DASHBOARD: "dashboard",
     SWIPECAROUSEL: "swipecarousel",
     CHATBOT: "chatbot",
+    TRANSPORT: "transport",
+    ARRIVAL: "arrival",
 };
 
 function App() {
@@ -245,6 +249,10 @@ function App() {
                                 setCurrentView(AuthView.SWIPECAROUSEL);
                             } else if (target === "chatbot") {
                                 setCurrentView(AuthView.CHATBOT);
+                            } else if (target === "transport") {
+                                setCurrentView(AuthView.TRANSPORT);
+                            } else if (target === "arrival") {
+                                setCurrentView(AuthView.ARRIVAL);
                             } else if (target === "profile-preferences") {
                                 setCurrentView(AuthView.PROFILE_PREFERENCES);
                             }
@@ -263,6 +271,27 @@ function App() {
                         currentLanguage={currentLanguage}
                         onBack={() => setCurrentView(AuthView.DASHBOARD)}
                         onNavigateToPreferences={() => setCurrentView(AuthView.PROFILE_PREFERENCES)}
+                    />
+                )}
+
+                {/* ARRIVAL CHECKLIST */}
+                {currentView === AuthView.ARRIVAL && user && (
+                    <Arrival
+                        city={selectedCity}
+                        activeCountry={activeCountry}
+                        onBack={() => setCurrentView(AuthView.DASHBOARD)}
+                        onOpenTransport={() => setCurrentView(AuthView.TRANSPORT)}
+                        onOpenChat={() => setCurrentView(AuthView.CHATBOT)}
+                    />
+                )}
+
+                {/* TRANSPORT GUIDE */}
+                {currentView === AuthView.TRANSPORT && user && (
+                    <Transport
+                        city={selectedCity}
+                        activeCountry={activeCountry}
+                        onBack={() => setCurrentView(AuthView.DASHBOARD)}
+                        onOpenChat={() => setCurrentView(AuthView.CHATBOT)}
                     />
                 )}
 

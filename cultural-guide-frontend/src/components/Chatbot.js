@@ -153,7 +153,7 @@ export function Chatbot({ user, onBack }) {
 
             const botResponse = {
                 id: (Date.now() + 1).toString(),
-                text: data.response || "Ecco i miei suggerimenti culturali per te.",
+                text: data.response || t('chatbot.errorSending'),
                 sender: 'bot',
                 timestamp: new Date(data.responseDate) || new Date(),
             };
@@ -204,7 +204,7 @@ export function Chatbot({ user, onBack }) {
                                 </span>
                             </div>
                             <p className="text-gray-500 dark:text-gray-400 text-xs">
-                                {t('chatbot.subtitle', 'Fammi domande su punti d\'interesse, eventi e consigli')} a {selectedCity}
+                                {t('chatbot.subtitle', 'Fammi domande su punti d\'interesse, eventi e consigli')} · {selectedCity}
                             </p>
                         </div>
 
@@ -217,7 +217,7 @@ export function Chatbot({ user, onBack }) {
                                 {isTimeAvailabilityReady && (
                                     <div className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold ${themeBadgeClass}`}>
                                         <Sparkles className={`w-3.5 h-3.5 ${themeHighlight}`} />
-                                        <span>Periodo Configurato</span>
+                                        <span>{t('chatbot_period_set')}</span>
                                     </div>
                                 )}
                             </div>

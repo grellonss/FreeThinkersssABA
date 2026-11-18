@@ -28,7 +28,7 @@ export const ITALIAN_AUTHENTIC_IMAGES = [
 /**
  * Returns an authentic cultural landmark photo resembling the place / territory.
  */
-export function getAuthenticFallbackImage(title = "", city = "", country = "CH", index = 0) {
+export function getAuthenticFallbackImage(title = "", city = "", country = "CH", index = -1) {
     const isIt = country === "IT" || city.toLowerCase().includes("camerino") || city.toLowerCase().includes("macerata") || city.toLowerCase().includes("ascoli");
     const pool = isIt ? ITALIAN_AUTHENTIC_IMAGES : SWISS_AUTHENTIC_IMAGES;
 

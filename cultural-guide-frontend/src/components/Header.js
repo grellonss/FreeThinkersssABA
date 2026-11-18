@@ -75,7 +75,7 @@ export function Header({
                 {/* CENTER - CONDITIONAL:
                     - If a country is active (all other pages): Center the current nation button!
                     - If no country is active (Country Selection page): Center ESN Olten 🇨🇭 & ESN Camerino 🇮🇹 Hub badge */}
-                <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center">
+                <div className="absolute left-1/2 -translate-x-1/2 hidden lg:flex items-center justify-center">
                     {activeCountry ? (
                         <button
                             onClick={onSwitchCountry}
@@ -84,7 +84,7 @@ export function Header({
                                     ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/80 hover:bg-emerald-100 dark:hover:bg-emerald-900/40"
                                     : "bg-red-50 dark:bg-red-950/60 text-red-800 dark:text-red-300 border-red-200 dark:border-red-800/80 hover:bg-red-100 dark:hover:bg-red-900/40"
                             }`}
-                            title="Clicca per cambiare destinazione"
+                            title={t('home_change_destination')}
                         >
                             <span className="text-sm">{activeCountry === "IT" ? "🇮🇹" : "🇨🇭"}</span>
                             <span>{activeCountry === "IT" ? "Italia • ESN Camerino" : "Svizzera • ESN Olten"}</span>

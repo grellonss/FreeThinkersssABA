@@ -19,66 +19,39 @@ import { useTranslation } from "react-i18next";
 const CATEGORY_ITEMS = [
     {
         id: "artculture",
-        title: "Arte, Musei e Monumenti",
-        desc: "Castelli, palazzi ducali, musei civici e patrimonio storico",
-        image: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80",
-        badge: "Cultura & Storia"
+        image: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80"
     },
     {
         id: "nature",
-        title: "Natura, Laghi e Vette",
-        desc: "Parchi naturali, vette panoramiche, fiumi e riserve",
-        image: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=600&auto=format&fit=crop&q=80",
-        badge: "Parchi & Laghi"
+        image: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=600&auto=format&fit=crop&q=80"
     },
     {
         id: "eatanddrink",
-        title: "Gastronomia & Ristorazione",
-        desc: "Cucina tradizionale, grotti tipici, trattorie ed eccellenze",
-        image: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&auto=format&fit=crop&q=80",
-        badge: "Sapori Tipici"
+        image: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&auto=format&fit=crop&q=80"
     },
     {
         id: "typicalproducts",
-        title: "Prodotti Tipici & Artigianato",
-        desc: "Botteghe locali, formaggi AOP, salumi marchigiani e cioccolato",
-        image: "https://images.unsplash.com/photo-1549007994-cb92caebd54b?w=600&auto=format&fit=crop&q=80",
-        badge: "Eccellenze Locali"
+        image: "https://images.unsplash.com/photo-1549007994-cb92caebd54b?w=600&auto=format&fit=crop&q=80"
     },
     {
         id: "routes",
-        title: "Sentieri ed Itinerari",
-        desc: "Percorsi escursionistici segnalati, cammini e viste panoramiche",
-        image: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=600&auto=format&fit=crop&q=80",
-        badge: "Escursioni"
+        image: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=600&auto=format&fit=crop&q=80"
     },
     {
         id: "events",
-        title: "Eventi, Festival e Sagre",
-        desc: "Tradizioni popolari, concerti, mostre temporanee e festival",
-        image: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=600&auto=format&fit=crop&q=80",
-        badge: "Eventi dal Vivo"
+        image: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=600&auto=format&fit=crop&q=80"
     },
     {
         id: "sleep",
-        title: "Ospitalità & Soggiorni",
-        desc: "Chalet alpini, hotel storici, agriturismi e alloggi studenteschi",
-        image: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600&auto=format&fit=crop&q=80",
-        badge: "Accoglienza"
+        image: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600&auto=format&fit=crop&q=80"
     },
     {
         id: "shopping",
-        title: "Shopping & Botteghe",
-        desc: "Artigianato d'eccellenza, orologeria, ceramiche e boutique",
-        image: "https://images.unsplash.com/photo-1513094735237-8f2714d57c13?w=600&auto=format&fit=crop&q=80",
-        badge: "Shopping Locale"
+        image: "https://images.unsplash.com/photo-1513094735237-8f2714d57c13?w=600&auto=format&fit=crop&q=80"
     },
     {
         id: "entertainmentleisure",
-        title: "Svago e Tempo Libero",
-        desc: "Terme, relax, parchi divertimento e treni panoramici",
-        image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&auto=format&fit=crop&q=80",
-        badge: "Relax & Tempo Libero"
+        image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&auto=format&fit=crop&q=80"
     }
 ];
 
@@ -119,7 +92,7 @@ export function ProfilePreferences({
 
     // 2. City State
     const defaultCity = isIt ? "Camerino" : "Olten";
-    const [selectedCity, setSelectedCity] = useState(initialData?.municipality || defaultCity);
+    const [selectedCity, setSelectedCity] = useState((initialData?.country === activeCountry && initialData?.municipality) || defaultCity);
     const [citySearch, setCitySearch] = useState("");
     const [cityOptions, setCityOptions] = useState([]);
 
@@ -211,7 +184,7 @@ export function ProfilePreferences({
                     if (data) {
                         if (data.firstName) setFirstName(data.firstName);
                         if (data.lastName) setLastName(data.lastName);
-                        if (data.municipality) setSelectedCity(data.municipality);
+                        if (data.municipality && data.country === activeCountry) setSelectedCity(data.municipality);
                         if (data.selectedCategories?.length) setSelectedCategories(data.selectedCategories);
                         if (data.startTime) {
                             setStartDate(data.startTime.split("T")[0]);
@@ -271,12 +244,12 @@ export function ProfilePreferences({
         e.preventDefault();
 
         if (!firstName.trim()) {
-            toast.error("Per favore inserisci il tuo nome per continuare.");
+            toast.error(t('profile_err_name'));
             return;
         }
 
         if (selectedCategories.length === 0) {
-            toast.error("Seleziona almeno una categoria di interesse.");
+            toast.error(t('profile_err_category'));
             return;
         }
 
@@ -284,7 +257,7 @@ export function ProfilePreferences({
         const endDateTime = new Date(`${endDate}T${String(endHour).padStart(2, "0")}:00:00`);
 
         if (endDateTime <= startDateTime) {
-            toast.error("La data/ora di ritorno deve essere successiva alla partenza.");
+            toast.error(t('profile_err_dates'));
             return;
         }
 
@@ -331,7 +304,7 @@ export function ProfilePreferences({
             localStorage.setItem("cultural_guide_country", activeCountry);
             localStorage.setItem("cultural_guide_city", selectedCity);
             localStorage.setItem("cultural_guide_preferences", JSON.stringify(profileVectorData));
-            toast.info("Preferenze salvate localmente.");
+            toast.info(t('profile_saved_locally'));
 
             if (onComplete) {
                 onComplete({
@@ -363,7 +336,7 @@ export function ProfilePreferences({
 
                 <div className={`inline-flex items-center gap-3 px-4 py-2 bg-white dark:bg-gray-800 rounded-full shadow-xs border ${themeBadgeClass}`}>
                     <span className="text-xs font-bold">
-                        {isIt ? "🇮🇹 Destinazione: Italia (ESN Camerino)" : "🇨🇭 Destinazione: Svizzera (ESN Olten)"}
+                        {isIt ? "🇮🇹" : "🇨🇭"} {isIt ? t('country_italy') : t('country_switzerland')} ({isIt ? "ESN Camerino" : "ESN Olten"})
                     </span>
                     {onSwitchCountry && (
                         <button
@@ -371,7 +344,7 @@ export function ProfilePreferences({
                             onClick={onSwitchCountry}
                             className={`text-xs font-bold underline ml-1 ${themeIconClass}`}
                         >
-                            {t('header_change', 'Cambia')} Paese
+                            {t('home_change_destination')}
                         </button>
                     )}
                 </div>
@@ -389,7 +362,7 @@ export function ProfilePreferences({
                                 <span>{t('profile_onboarding_title', 'Configurazione Profilo & Preferenze di Viaggio')}</span>
                             </div>
                             <h2 className="text-2xl sm:text-3xl font-black">
-                                Personalizza la tua Cultural Guide
+                                {t('profile_headline')}
                             </h2>
                             <p className="text-white/80 text-sm mt-1 max-w-xl">
                                 {t('profile_onboarding_subtitle', 'Imposta il tuo profilo, la data del tuo soggiorno e seleziona le categorie di interesse.')}
@@ -412,7 +385,7 @@ export function ProfilePreferences({
                             </div>
                             <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                                 <User className={`w-5 h-5 ${themeIconClass}`} />
-                                <span>I Tuoi Dati Personali</span>
+                                <span>{t('profile_personal_title')}</span>
                             </h3>
                         </div>
 
@@ -426,7 +399,7 @@ export function ProfilePreferences({
                                     required
                                     value={firstName}
                                     onChange={(e) => setFirstName(e.target.value)}
-                                    placeholder="Es. Fabio"
+                                    placeholder="Anna"
                                     className={`w-full px-4 py-2.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-medium text-gray-900 dark:text-white ${themeFocus} focus:outline-none transition-all shadow-xs`}
                                 />
                             </div>
@@ -439,7 +412,7 @@ export function ProfilePreferences({
                                     type="text"
                                     value={lastName}
                                     onChange={(e) => setLastName(e.target.value)}
-                                    placeholder="Es. Grelloni"
+                                    placeholder="Rossi"
                                     className={`w-full px-4 py-2.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-medium text-gray-900 dark:text-white ${themeFocus} focus:outline-none transition-all shadow-xs`}
                                 />
                             </div>
@@ -464,7 +437,7 @@ export function ProfilePreferences({
                                 <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-gray-400" />
                                 <input
                                     type="text"
-                                    placeholder={isIt ? "Cerca comune (es. Camerino, Urbino, Ascoli Piceno)..." : "Cerca comune (es. Olten, Lugano, Zurigo)..."}
+                                    placeholder={t('profile_search_city')}
                                     value={citySearch}
                                     onChange={(e) => setCitySearch(e.target.value)}
                                     className={`w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-medium text-gray-900 dark:text-white ${themeFocus} focus:outline-none shadow-xs`}
@@ -474,7 +447,7 @@ export function ProfilePreferences({
                             {/* Popular / Searched City Chips */}
                             <div>
                                 <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2.5">
-                                    {citySearch ? "Risultati della ricerca:" : "Città consigliate & partner ufficiali:"}
+                                    {citySearch ? t('profile_results') : t('profile_suggested')}
                                 </p>
                                 <div className="flex flex-wrap gap-2">
                                     {cityOptions.slice(0, 10).map((city) => {
@@ -537,7 +510,7 @@ export function ProfilePreferences({
                             {/* Quick Preset Chips */}
                             <div>
                                 <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
-                                    Seleziona rapida durata:
+                                    {t('profile_quick_duration')}
                                 </label>
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                     {[
@@ -639,11 +612,11 @@ export function ProfilePreferences({
                                 <div className="flex items-center gap-2">
                                     <Calendar className={`w-4 h-4 ${themeIconClass}`} />
                                     <span>
-                                        Dal <strong>{startDate}</strong> ({String(startHour).padStart(2, "0")}:00) al <strong>{endDate}</strong> ({String(endHour).padStart(2, "0")}:00)
+                                        <strong>{startDate}</strong> {String(startHour).padStart(2, "0")}:00 → <strong>{endDate}</strong> {String(endHour).padStart(2, "0")}:00
                                     </span>
                                 </div>
                                 <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold shadow-xs ${themeSummaryBadge}`}>
-                                    {durationDays} {durationDays === 1 ? "Giorno" : "Giorni"}
+                                    {t('profile_days', { count: durationDays })}
                                 </span>
                             </div>
 
@@ -668,7 +641,7 @@ export function ProfilePreferences({
                                 onClick={selectAllCategories}
                                 className={`text-xs font-bold underline ${themeIconClass}`}
                             >
-                                {selectedCategories.length === CATEGORY_ITEMS.length ? "Deseleziona tutte" : "Seleziona tutte"}
+                                {selectedCategories.length === CATEGORY_ITEMS.length ? t('profile_deselect_all') : t('profile_select_all')}
                             </button>
                         </div>
 
@@ -691,15 +664,10 @@ export function ProfilePreferences({
                                         <div className="relative h-28 overflow-hidden">
                                             <img
                                                 src={item.image}
-                                                alt={item.title}
+                                                alt=""
                                                 className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                                             />
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-
-                                             {/* Badge */}
-                                            <div className="absolute top-2.5 left-2.5 px-2 py-0.5 bg-black/60 backdrop-blur-md rounded-md text-[10px] font-bold text-white">
-                                                {item.badge}
-                                            </div>
 
                                             {/* Checkbox indicator */}
                                             <div className={`absolute top-2.5 right-2.5 w-6 h-6 rounded-full flex items-center justify-center transition-all ${
@@ -712,7 +680,7 @@ export function ProfilePreferences({
 
                                             <div className="absolute bottom-2 left-2.5 right-2.5 text-white">
                                                 <h4 className="text-xs font-bold leading-snug line-clamp-1">
-                                                    {item.title}
+                                                    {t(`cat_${item.id}`)}
                                                 </h4>
                                             </div>
                                         </div>
@@ -720,7 +688,7 @@ export function ProfilePreferences({
                                         {/* Description */}
                                         <div className="p-3 bg-white dark:bg-gray-900">
                                             <p className="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-2">
-                                                {item.desc}
+                                                {t(`cat_${item.id}_desc`)}
                                             </p>
                                         </div>
                                     </div>
@@ -731,7 +699,7 @@ export function ProfilePreferences({
                         {/* Selected counter */}
                         <div className="mt-3 text-right">
                             <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
-                                {selectedCategories.length} di {CATEGORY_ITEMS.length} categorie selezionate
+                                {t('profile_selected_count', { n: selectedCategories.length, total: CATEGORY_ITEMS.length })}
                             </span>
                         </div>
                     </div>
